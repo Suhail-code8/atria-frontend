@@ -25,7 +25,7 @@ export const MySubmissions = () => {
   const loadSubmissions = async () => {
     if (!id) return
     try {
-      const res = await submissionsApi.listMySubmissions(id)
+      const res = await submissionsApi.getMySubmission(id)
       setSubmissions(res.data.data)
     } catch (err: any) {
       setError(getErrorMessage(err))
@@ -39,7 +39,13 @@ export const MySubmissions = () => {
     loadSubmissions()
   }
 
-  // if (isLoading) return <Loader />
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600" />
+      </div>
+    )
+  }
 
   return (
     <div>
@@ -78,7 +84,7 @@ export const MySubmissions = () => {
                   <Badge status={sub.status} />
                 </div>
                 <div className="flex gap-4 text-sm text-gray-600">
-                  <span>Type: {sub.contentType}</span>
+                  <span>Type: {sub.type}</span>
                   {sub.submittedAt && <span>Submitted: {formatDate(sub.submittedAt)}</span>}
                 </div>
               </div>

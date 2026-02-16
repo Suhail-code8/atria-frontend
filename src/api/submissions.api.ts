@@ -1,36 +1,96 @@
 import axiosInstance from './axios'
-import { Submission } from '../types'
+import { Submission, SubmissionStatus } from '../types'
+
+// Helper function to convert data to FormData
+const toFormData = (data: any): FormData => {
+  const formData = new FormData()
+  
+  Object.keys(data).forEach((key) => {
+    const value = data[key]
+    
+    // Skip undefined or null values
+    if (value === undefined || value === null) return
+    
+    // Handle File objects
+    if (value instanceof File) {
+      formData.append(key, value)
+    }
+    // Handle regular data
+    else if (typeof value === 'object') {
+      formData.append(key, JSON.stringify(value))
+    }
+    else {
+      formData.append(key, String(value))
+    }
+  })
+  
+  return formData
+}
 
 export const submissionsApi = {
+  // Get single submission
   getSubmission: (eventId: string, submissionId: string) =>
     axiosInstance.get<{ success: boolean; data: Submission }>(
       `/events/${eventId}/submissions/${submissionId}`
     ),
 
-  createSubmission: (eventId: string, data: Partial<Submission>) =>
-    axiosInstance.post<{ success: boolean; data: Submission }>(
+  // Get my submission for an event (participant view)
+  getMySubmission: (eventId: string) =>
+    axiosInstance.get<{ success: boolean; data: Submission[] }>(
+      `/events/${eventId}/submissions/me`
+    ),
+
+  // Create a new submission with file upload support
+  createSubmission: (eventId: string, data: any) => {
+    const formData = toFormData(data)
+    return axiosInstance.post<{ success: boolean; data: Submission }>(
       `/events/${eventId}/submissions`,
-      data
-    ),
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      }
+    )
+  },
 
-  updateSubmission: (eventId: string, submissionId: string, data: Partial<Submission>) =>
-    axiosInstance.put<{ success: boolean; data: Submission }>(
+  // Update submission (DRAFT only) with file upload support
+  updateSubmission: (eventId: string, submissionId: string, data: any) => {
+    const formData = toFormData(data)
+    return axiosInstance.put<{ success: boolean; data: Submission }>(
       `/events/${eventId}/submissions/${submissionId}`,
-      data
-    ),
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      }
+    )
+  },
 
+  // Submit submission (DRAFT -> SUBMITTED)
   submitSubmission: (eventId: string, submissionId: string) =>
     axiosInstance.post<{ success: boolean; data: Submission }>(
       `/events/${eventId}/submissions/${submissionId}/submit`
     ),
 
-  listMySubmissions: (eventId: string) =>
-    axiosInstance.get<{ success: boolean; data: Submission[] }>(
-      `/events/${eventId}/my-submissions`
-    ),
-
-  listSubmissions: (eventId: string) =>
+  // Get all submissions for event (Organizer/Judge only)
+  getEventSubmissions: (eventId: string) =>
     axiosInstance.get<{ success: boolean; data: Submission[] }>(
       `/events/${eventId}/submissions`
+    ),
+
+  // Update submission status (Organizer/Judge only)
+  updateSubmissionStatus: (eventId: string, submissionId: string, status: SubmissionStatus) =>
+    axiosInstance.patch<{ success: boolean; data: Submission }>(
+      `/events/${eventId}/submissions/${submissionId}/status`,
+      { status }
+    ),
+
+  // Review/Grade submission (Organizer/Judge only)
+  reviewSubmission: (eventId: string, submissionId: string, data: { score: number; comment: string; status: SubmissionStatus }) =>
+    axiosInstance.put<{ success: boolean; data: Submission }>(
+      `/events/${eventId}/submissions/${submissionId}/review`,
+      data
     )
 }

@@ -8,8 +8,30 @@ export enum EventType {
 export enum EventStatus {
   DRAFT = 'DRAFT',
   PUBLISHED = 'PUBLISHED',
+  REGISTRATION_OPEN = 'REGISTRATION_OPEN',
   ONGOING = 'ONGOING',
-  COMPLETED = 'COMPLETED'
+  COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED',
+  ARCHIVED = 'ARCHIVED'
+}
+
+export interface EventCapabilities {
+  registration: boolean
+  submissions: boolean
+  review: boolean
+  teams: boolean
+  scoring: boolean
+  sessions: boolean
+  realtime: boolean
+}
+
+export interface FormField {
+  id: string
+  label: string
+  type: 'text' | 'number' | 'email' | 'select' | 'checkbox' | 'textarea'
+  required: boolean
+  options?: string[]
+  placeholder?: string
 }
 
 export interface Event {
@@ -19,14 +41,13 @@ export interface Event {
   eventType: EventType
   startDate: string | Date
   endDate: string | Date
+  registrationStartDate?: string | Date
+  registrationEndDate?: string | Date
   createdBy: string
   isPublic: boolean
   status: EventStatus
-  hasTeams?: boolean
-  hasCategories?: boolean
-  hasJudging?: boolean
-  hasScoring?: boolean
-  hasSubmissions?: boolean
+  capabilities: EventCapabilities
+  registrationForm?: FormField[]
   createdAt?: string
   updatedAt?: string
 }
@@ -67,23 +88,42 @@ export enum SubmissionStatus {
   DRAFT = 'DRAFT',
   SUBMITTED = 'SUBMITTED',
   UNDER_REVIEW = 'UNDER_REVIEW',
-  APPROVED = 'APPROVED',
+  ACCEPTED = 'ACCEPTED',
   REJECTED = 'REJECTED'
+}
+
+export interface SubmissionFile {
+  publicId: string
+  url: string
+  originalName: string
+  mimetype: string
+  size: number
+}
+
+export interface SubmissionReview {
+  score: number // 0-100
+  comment: string
+  feedbackFile?: {
+    publicId: string
+    url: string
+  }
+  reviewedBy: string | { _id: string; name: string; email: string }
+  reviewedAt: string | Date
 }
 
 export interface Submission {
   _id: string
   event: string
-  participation: string
+  participant: string
   title: string
-  description: string
-  contentType: ContentType
+  description?: string
+  type: ContentType
   status: SubmissionStatus
   content?: string
+  file?: SubmissionFile
+  review?: SubmissionReview
   submittedAt?: string | null
-  files?: any[]
-  links?: string[]
-  meta?: any
+  metadata?: Record<string, any>
   createdAt?: string
   updatedAt?: string
 }

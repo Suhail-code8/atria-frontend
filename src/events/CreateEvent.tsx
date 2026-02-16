@@ -22,11 +22,18 @@ export const CreateEvent = () => {
     eventType: 'CONFERENCE' as EventType,
     startDate: '',
     endDate: '',
+    registrationStartDate: '',
+    registrationEndDate: '',
     isPublic: true,
-    hasSubmissions: false,
-    hasTeams: false,
-    hasJudging: false,
-    hasScoring: false
+    capabilities: {
+      registration: false,
+      submissions: false,
+      review: false,
+      teams: false,
+      scoring: false,
+      sessions: false,
+      realtime: false
+    }
   })
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -36,6 +43,16 @@ export const CreateEvent = () => {
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
+    }))
+  }
+
+  const handleCapabilityChange = (capability: keyof typeof formData.capabilities) => {
+    setFormData(prev => ({
+      ...prev,
+      capabilities: {
+        ...prev.capabilities,
+        [capability]: !prev.capabilities[capability]
+      }
     }))
   }
 
@@ -141,15 +158,40 @@ export const CreateEvent = () => {
           />
         </div>
 
+        <div className="grid grid-cols-2 gap-6">
+          <Input
+            label="Registration Start Date"
+            type="datetime-local"
+            name="registrationStartDate"
+            value={formData.registrationStartDate}
+            onChange={handleChange}
+          />
+          <Input
+            label="Registration End Date"
+            type="datetime-local"
+            name="registrationEndDate"
+            value={formData.registrationEndDate}
+            onChange={handleChange}
+          />
+        </div>
+
         <div className="border-t pt-6">
-          <p className="text-sm font-medium text-gray-700 mb-4">Features</p>
+          <p className="text-sm font-medium text-gray-700 mb-4">Capabilities & Features</p>
           <div className="space-y-3">
             <label className="flex items-center gap-3">
               <input
                 type="checkbox"
-                name="hasSubmissions"
-                checked={formData.hasSubmissions}
-                onChange={handleChange}
+                checked={formData.capabilities.registration}
+                onChange={() => handleCapabilityChange('registration')}
+                className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+              />
+              <span className="text-gray-700">Enable Registration</span>
+            </label>
+            <label className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                checked={formData.capabilities.submissions}
+                onChange={() => handleCapabilityChange('submissions')}
                 className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
               />
               <span className="text-gray-700">Enable Submissions</span>
@@ -157,9 +199,8 @@ export const CreateEvent = () => {
             <label className="flex items-center gap-3">
               <input
                 type="checkbox"
-                name="hasTeams"
-                checked={formData.hasTeams}
-                onChange={handleChange}
+                checked={formData.capabilities.teams}
+                onChange={() => handleCapabilityChange('teams')}
                 className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
               />
               <span className="text-gray-700">Enable Teams</span>
@@ -167,12 +208,38 @@ export const CreateEvent = () => {
             <label className="flex items-center gap-3">
               <input
                 type="checkbox"
-                name="hasJudging"
-                checked={formData.hasJudging}
-                onChange={handleChange}
+                checked={formData.capabilities.review}
+                onChange={() => handleCapabilityChange('review')}
                 className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
               />
-              <span className="text-gray-700">Enable Judging</span>
+              <span className="text-gray-700">Enable Review</span>
+            </label>
+            <label className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                checked={formData.capabilities.scoring}
+                onChange={() => handleCapabilityChange('scoring')}
+                className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+              />
+              <span className="text-gray-700">Enable Scoring</span>
+            </label>
+            <label className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                checked={formData.capabilities.sessions}
+                onChange={() => handleCapabilityChange('sessions')}
+                className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+              />
+              <span className="text-gray-700">Enable Sessions</span>
+            </label>
+            <label className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                checked={formData.capabilities.realtime}
+                onChange={() => handleCapabilityChange('realtime')}
+                className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+              />
+              <span className="text-gray-700">Enable Real-time Updates</span>
             </label>
           </div>
         </div>

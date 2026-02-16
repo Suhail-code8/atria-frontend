@@ -37,6 +37,22 @@ export const Navbar = () => {
               >
                 Events
               </Link>
+              {user.role === 'PARTICIPANT' && (
+                <Link
+                  to="/my-registrations"
+                  className="text-gray-700 hover:text-primary-600 font-medium"
+                >
+                  My Registrations
+                </Link>
+              )}
+              {user.role === 'ORGANIZER' && (
+                <Link
+                  to="/my-events"
+                  className="text-gray-700 hover:text-primary-600 font-medium"
+                >
+                  My Events
+                </Link>
+              )}
               {user.role === 'ORGANIZER' && (
                 <Link
                   to="/events/create"

@@ -8,6 +8,7 @@ import Badge from '../components/Badge'
 import Button from '../components/Button'
 // import Loader from '../components/Loader'
 import Modal from '../components/Modal'
+import { RegistrationModal } from '../components/RegistrationModal'
 import { AlertCircle, Users } from 'lucide-react'
 import { formatDate, getErrorMessage } from '../utils/formatters'
 import { Link } from 'react-router-dom'
@@ -24,8 +25,8 @@ export const EventDetails = () => {
   const [participation, setParticipation] = useState<Participation | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
-  const [isRegistering, setIsRegistering] = useState(false)
   const [showParticipants, setShowParticipants] = useState(false)
+  const [showRegistrationModal, setShowRegistrationModal] = useState(false)
 
   useEffect(() => {
     loadEvent(effectiveEventId)
@@ -65,16 +66,16 @@ export const EventDetails = () => {
     }
   }
 
-  const handleRegister = async () => {
+  const handleRegister = async (answers: Record<string, any>) => {
     if (!eventId) return
-    setIsRegistering(true)
     try {
-      const res = await participationApi.registerForEvent(eventId)
+      const res = await participationApi.registerForEvent(eventId, answers)
       setParticipation(res.data.data)
+      setShowRegistrationModal(false)
+      setError('')
     } catch (err: any) {
       setError(getErrorMessage(err))
-    } finally {
-      setIsRegistering(false)
+      throw err // Re-throw to let modal handle the error state
     }
   }
 
@@ -136,11 +137,10 @@ export const EventDetails = () => {
         </div>
 
         <div className="flex gap-4">
-          {!isCreator && !isRegistered && user && (
+          {!isCreator && !isRegistered && user && event.status === 'REGISTRATION_OPEN' && event.capabilities.registration && (
             <Button
               variant="primary"
-              onClick={handleRegister}
-              isLoading={isRegistering}
+              onClick={() => setShowRegistrationModal(true)}
             >
               Register for Event
             </Button>
@@ -156,7 +156,7 @@ export const EventDetails = () => {
               <Link to={`/events/${event._id}/manage`}>
                 <Button variant="secondary">Manage Event</Button>
               </Link>
-              {event.hasSubmissions && (
+              {event.capabilities.submissions && (
                 <Link to={`/events/${event._id}/submissions`}>
                   <Button variant="secondary">View Submissions</Button>
                 </Link>
@@ -167,9 +167,9 @@ export const EventDetails = () => {
               </Button>
             </>
           )}
-          {isRegistered && event.hasSubmissions && (
-            <Link to={`/events/${event._id}/my-submissions`}>
-              <Button variant="secondary">My Submissions</Button>
+          {isRegistered && event.capabilities.submissions && (
+            <Link to={`/events/${event._id}/submission`}>
+              <Button variant="secondary">My Submission</Button>
             </Link>
           )}
         </div>
@@ -183,6 +183,14 @@ export const EventDetails = () => {
       >
         <ParticipantsList eventId={event._id} />
       </Modal>
+
+      <RegistrationModal
+        isOpen={showRegistrationModal}
+        onClose={() => setShowRegistrationModal(false)}
+        onSubmit={handleRegister}
+        fields={event.registrationForm || []}
+        eventTitle={event.title}
+      />
     </div>
   )
 }

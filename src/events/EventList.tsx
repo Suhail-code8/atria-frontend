@@ -1,12 +1,19 @@
 import { useEffect, useState } from 'react'
 import { eventsApi } from '../api/events.api'
-import { Event } from '../types'
+import { Event, EventStatus } from '../types'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
-import Badge from '../components/Badge'
 // import Loader from '../components/Loader'
-import { AlertCircle, Calendar } from 'lucide-react'
-import { formatDate } from '../utils/formatters'
+import { AlertCircle } from 'lucide-react'
+import EventCard from './EventCard'
+
+const PUBLIC_STATUSES = new Set<string>([
+  EventStatus.PUBLISHED,
+  EventStatus.REGISTRATION_OPEN,
+  'REGISTRATION_CLOSED',
+  EventStatus.ONGOING,
+  EventStatus.COMPLETED
+])
 
 export const EventList = () => {
   const { user } = useAuth()
@@ -30,6 +37,8 @@ export const EventList = () => {
       setIsLoading(false)
     }
   }
+
+  const visibleEvents = events.filter((event) => PUBLIC_STATUSES.has(String(event.status)))
 
   // if (isLoading) return <Loader />
 
@@ -60,33 +69,14 @@ export const EventList = () => {
         </div>
       )}
 
-      {!isLoading && events.length === 0 ? (
+      {!isLoading && visibleEvents.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-gray-500 text-lg">No events yet</p>
+          <p className="text-gray-500 text-lg">No upcoming events found.</p>
         </div>
       ) : !isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {events.map(event => (
-            <Link
-              key={event._id}
-              to={`/events/${event._id}`}
-              onClick={() => console.log('[EventList] link click', { id: event._id })}
-              className="block bg-white rounded-lg shadow hover:shadow-lg transition-shadow h-full p-6 border border-gray-200 hover:border-primary-300 no-underline text-inherit"
-            >
-              <div className="flex justify-between items-start mb-3">
-                <h3 className="text-xl font-bold text-gray-900 flex-1">{event.title}</h3>
-                <Badge status={event.status} />
-              </div>
-              <p className="text-gray-600 text-sm mb-4 line-clamp-2">{event.description}</p>
-              <div className="flex items-center gap-2 text-gray-600 text-sm mb-4">
-                <Calendar className="w-4 h-4" />
-                <span>{formatDate(event.startDate)} – {formatDate(event.endDate)}</span>
-              </div>
-              <div className="flex gap-2 flex-wrap">
-                {event.hasSubmissions && <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">Submissions</span>}
-                {event.hasJudging && <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">Judging</span>}
-              </div>
-            </Link>
+          {visibleEvents.map(event => (
+            <EventCard key={event._id} event={event} />
           ))}
         </div>
       ) : null}
