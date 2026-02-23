@@ -6,10 +6,10 @@ import { Event, Participation } from '../types'
 import { useAuth } from '../auth/AuthContext'
 import Badge from '../components/Badge'
 import Button from '../components/Button'
-// import Loader from '../components/Loader'
+                                            
 import Modal from '../components/Modal'
 import { RegistrationModal } from '../components/RegistrationModal'
-import { AlertCircle, Users } from 'lucide-react'
+import { AlertCircle, ChevronDown, ChevronUp, Mail, Search, Users } from 'lucide-react'
 import { formatDate, getErrorMessage } from '../utils/formatters'
 import { Link } from 'react-router-dom'
 
@@ -17,7 +17,7 @@ export const EventDetails = () => {
   const { eventId } = useParams<{ eventId: string }>()
   const location = useLocation()
 
-  // Fallback: also derive ID from URL path in case route params don't populate as expected
+                                                                                           
   const pathEventId = location.pathname.split('/').filter(Boolean).pop()
   const effectiveEventId = eventId || pathEventId
   const { user } = useAuth()
@@ -75,11 +75,11 @@ export const EventDetails = () => {
       setError('')
     } catch (err: any) {
       setError(getErrorMessage(err))
-      throw err // Re-throw to let modal handle the error state
+      throw err                                                
     }
   }
 
-  // if (isLoading) return <Loader />
+                                     
   if (isLoading) return <div className="text-center py-12">Loading event...</div>
   if (!event) return (
     <div className="text-center py-12">
@@ -181,7 +181,7 @@ export const EventDetails = () => {
         title="Event Participants"
         size="lg"
       >
-        <ParticipantsList eventId={event._id} />
+        <ParticipantsList eventId={event._id} formSchema={event.registrationForm} />
       </Modal>
 
       <RegistrationModal
@@ -195,9 +195,11 @@ export const EventDetails = () => {
   )
 }
 
-const ParticipantsList = ({ eventId }: { eventId: string }) => {
+const ParticipantsList = ({ eventId, formSchema }: { eventId: string; formSchema?: any[] }) => {
   const [participants, setParticipants] = useState<Participation[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [expandedId, setExpandedId] = useState<string | null>(null)
 
   useEffect(() => {
     participationApi.listParticipants(eventId)
@@ -205,22 +207,118 @@ const ParticipantsList = ({ eventId }: { eventId: string }) => {
       .finally(() => setIsLoading(false))
   }, [eventId])
 
+  const normalizedSearch = searchTerm.trim().toLowerCase()
+  const filteredParticipants = participants.filter((participant) => {
+    if (!normalizedSearch) return true
+    const name = participant.user.name.toLowerCase()
+    const email = participant.user.email.toLowerCase()
+    return name.includes(normalizedSearch) || email.includes(normalizedSearch)
+  })
+
+  const formatAnswerValue = (value: unknown) => {
+    if (typeof value === 'boolean') return value ? 'Yes' : 'No'
+    if (Array.isArray(value)) return value.join(', ')
+    if (value === null || value === undefined || value === '') return '—'
+    if (typeof value === 'object') return JSON.stringify(value)
+    return String(value)
+  }
+
+  const getLabel = (key: string) => {
+    const field = formSchema?.find((item) => item?.id === key)
+    return field?.label || key
+  }
+
   // if (isLoading) return <Loader />
   if (isLoading) return <div className="text-center py-4">Loading participants...</div>
 
+  if (participants.length === 0) {
+    return (
+      <div className="py-12 text-center bg-gray-50 border border-gray-200 rounded-xl">
+        <Users className="w-10 h-10 text-gray-400 mx-auto mb-3" />
+        <p className="text-gray-800 font-medium">No participants yet</p>
+        <p className="text-sm text-gray-500 mt-1">Registrations will appear here once users join this event.</p>
+      </div>
+    )
+  }
+
   return (
-    <div className="space-y-3">
-      {participants.map(p => (
-        <div key={p._id} className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-          <div>
-            <p className="font-semibold">{p.user.name}</p>
-            <p className="text-sm text-gray-600">{p.user.email}</p>
-          </div>
-          <div className="flex gap-2">
-            <Badge status={p.status} />
-          </div>
+    <div className="space-y-4">
+      <div className="relative">
+        <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+        <input
+          type="text"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder="Search by name or email"
+          className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white"
+        />
+      </div>
+
+      {filteredParticipants.length === 0 ? (
+        <div className="py-10 text-center bg-gray-50 border border-gray-200 rounded-xl">
+          <Search className="w-9 h-9 text-gray-400 mx-auto mb-3" />
+          <p className="text-gray-800 font-medium">No participants match your search.</p>
         </div>
-      ))}
+      ) : (
+        filteredParticipants.map(p => (
+          <div key={p._id} className="bg-white border border-gray-200 shadow-sm rounded-xl p-5">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-semibold shrink-0">
+                  {p.user.name?.charAt(0).toUpperCase() || 'U'}
+                </div>
+                <div className="min-w-0">
+                  <p className="font-semibold text-gray-900 truncate">{p.user.name}</p>
+                  <p className="text-sm text-gray-600 flex items-center gap-1.5 truncate">
+                    <Mail className="w-4 h-4 text-gray-400" />
+                    <span>{p.user.email}</span>
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-2 shrink-0">
+                <Badge status={p.status} />
+              </div>
+            </div>
+
+            {(() => {
+              const registrationAnswers = p.answers ?? p.metadata
+              if (!registrationAnswers || Object.keys(registrationAnswers).length === 0) {
+                return null
+              }
+
+              const isExpanded = expandedId === p._id
+
+              return (
+                <div className="mt-3">
+                  <button
+                    type="button"
+                    onClick={() => setExpandedId(isExpanded ? null : p._id)}
+                    className="w-full flex items-center justify-between text-sm font-medium text-gray-700 hover:text-gray-900 bg-gray-50 rounded-lg px-3 py-2 border border-gray-200"
+                  >
+                    <span>View Answers</span>
+                    {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  </button>
+
+                  {isExpanded && (
+                    <div className="bg-gray-50 p-3 rounded-lg mt-2">
+                      <p className="text-sm font-medium text-gray-700 mb-2">Form Answers</p>
+                      <div className="space-y-2">
+                        {Object.entries(registrationAnswers).map(([key, value]) => (
+                          <div key={key} className="pb-2 border-b border-gray-200 last:border-b-0 last:pb-0">
+                            <p className="text-sm font-medium text-gray-900">{getLabel(key)}</p>
+                            <p className="text-sm text-gray-700 break-words mt-0.5">{formatAnswerValue(value)}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })()}
+          </div>
+        ))
+      )}
     </div>
   )
 }

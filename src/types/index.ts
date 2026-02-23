@@ -71,6 +71,8 @@ export interface Participation {
   event: string
   role: ParticipationRole
   status: ParticipationStatus
+  answers?: Record<string, any>
+  metadata?: Record<string, any>
   registeredAt: string
   createdAt?: string
   updatedAt?: string
@@ -101,7 +103,7 @@ export interface SubmissionFile {
 }
 
 export interface SubmissionReview {
-  score: number // 0-100
+  score: number         
   comment: string
   feedbackFile?: {
     publicId: string

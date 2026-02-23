@@ -18,7 +18,7 @@ const SubmissionViewer = (): JSX.Element => {
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   
-  // Review form state
+                      
   const [score, setScore] = useState<number>(0)
   const [comment, setComment] = useState('')
   const [isReviewing, setIsReviewing] = useState(false)
@@ -43,7 +43,7 @@ const SubmissionViewer = (): JSX.Element => {
       const loadedSubmission = response.data.data
       setSubmission(loadedSubmission)
       
-      // Pre-fill review form if already reviewed
+                                                 
       if (loadedSubmission.review) {
         setScore(loadedSubmission.review.score)
         setComment(loadedSubmission.review.comment)
@@ -63,8 +63,9 @@ const SubmissionViewer = (): JSX.Element => {
       setError('Score must be between 0 and 100')
       return
     }
-    if (!comment.trim()) {
-      setError('Comment is required')
+    const normalizedComment = comment.trim()
+    if (status === SubmissionStatus.REJECTED && !normalizedComment) {
+      setError('Comment is required for rejected submissions')
       return
     }
 
@@ -72,13 +73,13 @@ const SubmissionViewer = (): JSX.Element => {
     try {
       const response = await submissionsApi.reviewSubmission(eventId, submissionId, {
         score,
-        comment,
+        comment: normalizedComment,
         status
       })
       setSubmission(response.data.data)
       setError('')
       
-      // Show success message
+                             
       alert(`Submission ${status.toLowerCase()} successfully!`)
     } catch (err: any) {
       setError(getErrorMessage(err))

@@ -66,7 +66,7 @@ export const EventManagement = () => {
 
       setEvent(eventData);
 
-      // FIX: Convert Date objects to "YYYY-MM-DDTHH:mm" strings for the input fields
+                                                                                     
       setEditData({
         title: eventData.title,
         description: eventData.description,
@@ -94,7 +94,7 @@ export const EventManagement = () => {
       const res = await eventsApi.getEventAnalytics(eventId);
       setAnalytics(res.data.data);
     } catch (err: any) {
-      // Silently fail for analytics - not critical
+                                                   
       console.error('Failed to load analytics:', err);
     }
   };

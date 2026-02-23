@@ -5,6 +5,8 @@ import { useAuth } from './AuthContext'
 import Button from '../components/Button'
 import Input from '../components/Input'
 import { AlertCircle } from 'lucide-react'
+import { CredentialResponse, GoogleLogin } from '@react-oauth/google'
+import axiosInstance from '../api/axios'
 
 export const Login = () => {
   const navigate = useNavigate()
@@ -31,6 +33,35 @@ export const Login = () => {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
+    const credential = credentialResponse.credential
+
+    if (!credential) {
+      setError('Google login failed. Missing credential.')
+      return
+    }
+
+    setError('')
+    setIsLoading(true)
+
+    try {
+      const response = await axiosInstance.post('/auth/google', { credential })
+      const { accessToken, user } = response.data.data
+
+      setAccessToken(accessToken)
+      setUser(user)
+      navigate('/events')
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Google login failed. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleGoogleError = () => {
+    setError('Google login was cancelled or failed.')
   }
 
   return (
@@ -65,6 +96,27 @@ export const Login = () => {
             Sign In
           </Button>
         </form>
+
+        <div className="mt-6">
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300" />
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-gray-500">Or continue with</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-5 flex justify-center">
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={handleGoogleError}
+            theme="outline"
+            size="large"
+            width="320"
+          />
+        </div>
 
         <p className="text-center text-gray-600 text-sm mt-6">
           Don't have an account?{' '}

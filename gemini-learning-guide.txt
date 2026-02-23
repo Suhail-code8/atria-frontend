@@ -1,0 +1,500 @@
+﻿# Gemini Learning Prompts - Understanding Your Atria Event Management Code
+
+This document contains structured prompts you can paste into Gemini to understand your codebase and TypeScript concepts.
+
+---
+
+## ðŸŽ¯ Learning Path Overview
+
+1. **TypeScript Basics** - Understand the language fundamentals
+2. **React & Frontend Concepts** - Learn the UI framework
+3. **Backend Architecture** - Understand Node.js, Express, MongoDB
+4. **Your Specific Code** - Deep dive into event management system
+
+---
+
+## ðŸ“š SECTION 1: TypeScript Fundamentals
+
+### Prompt 1.1: TypeScript Basics
+```
+I'm learning TypeScript and need to understand the basics. Please explain:
+
+1. What is TypeScript and how is it different from JavaScript?
+2. What are types, interfaces, and type annotations?
+3. Explain these TypeScript features with examples:
+   - Basic types (string, number, boolean, array)
+   - Interfaces
+   - Type aliases
+   - Enums
+   - Generics
+   - Optional properties (?)
+   - Union types (|)
+
+Please use simple examples and explain like I'm a beginner.
+```
+
+### Prompt 1.2: Understanding TypeScript in React
+```
+I'm working with React and TypeScript. Please explain:
+
+1. What are React component props and how do we type them?
+2. What is `React.FC` or function components?
+3. What are hooks (useState, useEffect) and how to type them?
+4. What does this syntax mean:
+   - `const [state, setState] = useState<Type>(initialValue)`
+   - `React.ChangeEvent<HTMLInputElement>`
+   - `(e: React.FormEvent) => void`
+
+Show me examples of a simple form component with TypeScript.
+```
+
+### Prompt 1.3: Advanced TypeScript Patterns
+```
+I see these patterns in my code. Please explain each:
+
+1. What is `Partial<Type>`?
+2. What is `Record<Key, Value>`?
+3. What does `as` keyword do (type assertion)?
+4. What is `keyof typeof`?
+5. What are generic types like `<T>`?
+6. What does `extends` mean in TypeScript?
+
+Use examples from real-world scenarios.
+```
+
+---
+
+## ðŸŽ¨ SECTION 2: React & Frontend Concepts
+
+### Prompt 2.1: React Fundamentals
+```
+I'm building a React application. Please explain:
+
+1. What is React and how does it work?
+2. What are components, props, and state?
+3. What is the difference between functional and class components?
+4. What are React Hooks and why do we use them?
+5. Explain these hooks with examples:
+   - useState
+   - useEffect
+   - useNavigate (from react-router-dom)
+   - Custom hooks
+
+Keep explanations beginner-friendly with code examples.
+```
+
+### Prompt 2.2: Forms and Event Handling
+```
+I have forms in my React app. Please explain:
+
+1. How to handle form inputs in React?
+2. What is controlled vs uncontrolled components?
+3. How to handle form submission?
+4. How to manage multiple form fields with one state object?
+5. How to handle different input types (text, checkbox, select)?
+
+Show me a complete example of a form with multiple field types.
+```
+
+### Prompt 2.3: React Router
+```
+My app uses React Router. Please explain:
+
+1. What is React Router and why do we need it?
+2. What are routes, navigation, and URL parameters?
+3. How does `useNavigate()` work?
+4. How does `useParams()` work?
+5. What is `Link` vs `navigate()`?
+
+Show examples of routing in a multi-page application.
+```
+
+---
+
+## ðŸ”§ SECTION 3: Backend & API Concepts
+
+### Prompt 3.1: Node.js & Express Basics
+```
+I'm working with a Node.js backend. Please explain:
+
+1. What is Node.js and Express?
+2. What are routes, controllers, and services?
+3. What is middleware and how does it work?
+4. What are HTTP methods (GET, POST, PUT, DELETE)?
+5. What is request (req) and response (res)?
+6. How does async/await work in JavaScript?
+
+Use simple examples for each concept.
+```
+
+### Prompt 3.2: MongoDB & Mongoose
+```
+My backend uses MongoDB with Mongoose. Please explain:
+
+1. What is MongoDB and how is it different from SQL databases?
+2. What is Mongoose and what are schemas/models?
+3. What are these Mongoose features:
+   - Schema definition
+   - Model creation
+   - CRUD operations (Create, Read, Update, Delete)
+   - Validation
+   - References and population
+   - Timestamps
+
+Show examples of defining and using a model.
+```
+
+### Prompt 3.3: API Design & REST
+```
+I'm building a REST API. Please explain:
+
+1. What is a REST API?
+2. What are endpoints and HTTP status codes?
+3. How to structure API responses?
+4. What is authentication and authorization?
+5. What are middleware for auth?
+6. How to handle errors in APIs?
+
+Show examples of a complete CRUD API for a resource.
+```
+
+---
+
+## ðŸŽ¯ SECTION 4: Understanding Your Event Management Code
+
+### Prompt 4.1: Event Model Deep Dive
+```
+I have this Event model in my code. Please explain every part:
+
+[Paste the Event Model code from event.model.ts]
+
+Specifically explain:
+1. What is each field for?
+2. What do the enums (EventType, EventStatus) do?
+3. What are the capabilities and how do they work?
+4. What is the registrationForm array?
+5. How does the schema validation work?
+```
+
+### Prompt 4.2: Event Creation Flow
+```
+I want to understand how event creation works in my app. Here's the code:
+
+[Paste CreateEvent component code]
+
+Please explain:
+1. How does the form state management work?
+2. What happens when I submit the form?
+3. How do capabilities get toggled?
+4. How are dates handled?
+5. What is the flow from form submission to database?
+
+Walk me through the entire process step-by-step.
+```
+
+### Prompt 4.3: Event Lifecycle System
+```
+My app has an event lifecycle system. Here's the code:
+
+[Paste event.lifecycle.ts code]
+
+Please explain:
+1. What is a state machine/lifecycle?
+2. How do the transition rules work?
+3. What are preconditions and why are they needed?
+4. How does the validation prevent invalid transitions?
+5. Give me examples of valid and invalid transitions.
+
+Explain like I'm learning about state management for the first time.
+```
+
+### Prompt 4.4: API Integration
+```
+I have this API client code:
+
+[Paste events.api.ts code]
+
+Please explain:
+1. What is axios and how does it work?
+2. How do these API calls work?
+3. What are the TypeScript generics doing here?
+4. How does error handling work?
+5. How do I use these functions in my components?
+
+Show me examples of calling these APIs from a React component.
+```
+
+### Prompt 4.5: Event Management Component
+```
+This is my event management component. Please break it down:
+
+[Paste EventManagement.tsx code - or describe key parts]
+
+Explain:
+1. How does the component load event data?
+2. How does editing work?
+3. How do state transitions happen?
+4. What is the analytics section doing?
+5. How are capabilities managed?
+
+Walk me through what happens when a user edits an event.
+```
+
+---
+
+## ðŸ” SECTION 5: Specific Code Patterns
+
+### Prompt 5.1: Understanding This Pattern
+```
+I see this pattern in my code but don't understand it:
+
+[Paste specific code snippet you're confused about]
+
+Please explain:
+1. What is this code doing?
+2. Why is it written this way?
+3. What are the alternatives?
+4. How would I modify it for [specific use case]?
+```
+
+### Prompt 5.2: Error Handling
+```
+How does error handling work in my code? I see patterns like:
+
+try {
+  // code
+} catch (err: any) {
+  setError(getErrorMessage(err))
+}
+
+Please explain:
+1. What is try-catch?
+2. Why use `err: any`?
+3. What is getErrorMessage doing?
+4. How should I handle errors in frontend vs backend?
+5. What are best practices?
+```
+
+### Prompt 5.3: Async Operations
+```
+I see async/await everywhere. Please explain:
+
+async function loadEvent() {
+  const response = await eventsApi.getEvent(eventId)
+  setEvent(response.data.data)
+}
+
+Explain:
+1. What is async/await?
+2. Why do we need it for API calls?
+3. What is a Promise?
+4. How does this differ from callbacks?
+5. How to handle errors with async/await?
+
+Use simple analogies to explain.
+```
+
+---
+
+## ðŸŽ“ SECTION 6: Learning Your Entire System
+
+### Prompt 6.1: Complete Event System Overview
+```
+I want to understand my entire event management system. Here's what I have:
+
+FRONTEND:
+- CreateEvent component (creates events)
+- EventManagement component (manages events)
+- EventList component (displays events)
+- Event API client (communicates with backend)
+
+BACKEND:
+- Event Model (database schema)
+- Event Controller (handles requests)
+- Event Service (business logic)
+- Event Lifecycle (state transitions)
+- Event Routes (API endpoints)
+
+Please explain:
+1. How do all these pieces work together?
+2. What is the flow from user clicking "Create Event" to event being saved?
+3. What is the flow for transitioning event states?
+4. How does data flow between frontend and backend?
+5. What are the key concepts I need to understand?
+
+Create a step-by-step guide showing how everything connects.
+```
+
+### Prompt 6.2: Database to UI Flow
+```
+Explain the complete data flow in my application:
+
+1. How does data go from MongoDB to the UI?
+2. How does user input get saved to the database?
+3. What transformations happen along the way?
+4. What is sanitization and why do we do it?
+5. How do we ensure data consistency?
+
+Use my event creation as an example and trace the data through every layer.
+```
+
+### Prompt 6.3: Architecture Patterns
+```
+What architectural patterns am I using? I have:
+
+- MVC-like structure (Model, Controller, Service)
+- Component-based UI (React)
+- REST API
+- State management with hooks
+- Form handling patterns
+
+Please explain:
+1. What is each pattern and why use it?
+2. How do they work together?
+3. What are the benefits?
+4. What are common mistakes to avoid?
+5. How would I extend this for new features?
+```
+
+---
+
+## ðŸ’¡ SECTION 7: Practical Learning
+
+### Prompt 7.1: Debugging Help
+```
+I'm trying to debug an issue. Here's what's happening:
+
+[Describe your issue]
+
+Here's the relevant code:
+[Paste code]
+
+Please help me:
+1. Understand what might be wrong
+2. How to debug this step-by-step
+3. What to look for in console/network tab
+4. How to add logging to trace the issue
+5. Common causes of this type of problem
+```
+
+### Prompt 7.2: Adding New Features
+```
+I want to add a new feature: [describe feature]
+
+Based on my existing code structure, please:
+1. Explain what files I need to modify
+2. What new code I need to write
+3. How to maintain consistency with existing patterns
+4. What validations I should add
+5. How to test the new feature
+
+Provide step-by-step guidance with code examples.
+```
+
+### Prompt 7.3: Code Review & Best Practices
+```
+Please review this code and suggest improvements:
+
+[Paste your code]
+
+Focus on:
+1. TypeScript best practices
+2. React best practices
+3. Security considerations
+4. Performance optimizations
+5. Code readability and maintainability
+
+Explain why each suggestion is important.
+```
+
+---
+
+## ðŸ“– Quick Reference Prompts
+
+### Understanding Specific Syntax
+```
+What does this syntax mean in TypeScript/React?
+
+[Paste specific line or pattern]
+
+Please explain in simple terms with examples.
+```
+
+### Comparing Approaches
+```
+What's the difference between these two approaches?
+
+Approach 1:
+[Paste code]
+
+Approach 2:
+[Paste code]
+
+Which is better and why?
+```
+
+### Learning by Example
+```
+Show me a complete example of [concept] using my code style and patterns.
+
+Include:
+- TypeScript types
+- Error handling
+- Best practices
+- Comments explaining each part
+```
+
+---
+
+## ðŸŽ¯ Recommended Learning Order
+
+1. **Start with TypeScript Basics** (Section 1)
+2. **Learn React Fundamentals** (Section 2)
+3. **Understand Backend Concepts** (Section 3)
+4. **Study Your Specific Code** (Section 4)
+5. **Deep Dive into Patterns** (Section 5)
+6. **Understand Complete System** (Section 6)
+7. **Practice with Real Tasks** (Section 7)
+
+---
+
+## ðŸ’¡ Tips for Using These Prompts
+
+1. **Start Simple**: Begin with basic concepts before diving into complex code
+2. **One Topic at a Time**: Don't try to learn everything at once
+3. **Ask Follow-ups**: If something isn't clear, ask Gemini to explain differently
+4. **Use Examples**: Always ask for code examples you can experiment with
+5. **Apply Learning**: Try modifying your actual code after understanding concepts
+6. **Take Notes**: Keep track of what you learn
+7. **Practice**: Write small test programs to solidify understanding
+
+---
+
+## ðŸ”— Additional Resources to Ask Gemini About
+
+```
+Please recommend:
+1. Best TypeScript learning resources for beginners
+2. React documentation sections I should read
+3. MongoDB/Mongoose tutorials
+4. Best practices guides for Node.js/Express
+5. Common patterns in full-stack development
+```
+
+---
+
+## ðŸ“ Template for Custom Questions
+
+```
+I'm working on [specific task/feature] and need to understand [concept].
+
+Here's my current code:
+[Paste code]
+
+Please explain:
+1. [Specific question 1]
+2. [Specific question 2]
+3. [Specific question 3]
+
+Use examples from my code and explain step-by-step.
+```

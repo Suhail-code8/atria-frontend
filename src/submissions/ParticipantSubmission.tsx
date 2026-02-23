@@ -22,7 +22,7 @@ const ParticipantSubmission = () => {
   const [createError, setCreateError] = useState('')
   const [isCreating, setIsCreating] = useState(false)
   
-  // Form state for creating submission
+                                       
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -40,14 +40,14 @@ const ParticipantSubmission = () => {
     
     setIsLoading(true)
     try {
-      // Load event details
+                           
       const eventRes = await eventsApi.getEvent(eventId)
       setEvent(eventRes.data.data)
       
-      // Try to load submission
+                               
       try {
         const submissionRes = await submissionsApi.getMySubmission(eventId)
-        // Handle array or single object response
+                                                 
         const data = submissionRes.data.data
         if (Array.isArray(data) && data.length > 0) {
           setSubmission(data[0])
@@ -57,7 +57,7 @@ const ParticipantSubmission = () => {
           setSubmission(null)
         }
       } catch (err: any) {
-        // 404 means no submission exists yet
+                                             
         if (err.response?.status === 404 || err.response?.status === 403) {
           setSubmission(null)
         } else {
@@ -81,7 +81,7 @@ const ParticipantSubmission = () => {
     try {
       const dataToSubmit: any = { ...formData }
       
-      // Add file if selected
+                             
       if (selectedFile) {
         dataToSubmit.file = selectedFile
       }
@@ -89,7 +89,7 @@ const ParticipantSubmission = () => {
       const res = await submissionsApi.createSubmission(eventId, dataToSubmit)
       setSubmission(res.data.data)
       setShowCreateModal(false)
-      // Reset form
+                   
       setFormData({
         title: '',
         description: '',

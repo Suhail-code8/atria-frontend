@@ -28,23 +28,23 @@ export const routes: RouteObject[] = [
   {
     element: <PageLayout />,
     children: [
-      // === 🌍 PUBLIC ROUTES (Accessible to Everyone) ===
+                                                          
       {
         path: '/',
-        element: <EventList /> // No ProtectedRoute wrapper
+        element: <EventList />                             
       },
       {
         path: '/events',
-        element: <EventList /> // No ProtectedRoute wrapper
+        element: <EventList />                             
       },
       {
         path: '/events/:eventId',
-        element: <EventDetails /> // No ProtectedRoute wrapper
+        element: <EventDetails />                             
       },
 
-      // === 🔒 PROTECTED ROUTES (Require Login) ===
+                                                    
       
-      // Organizer: Create Event
+                                
       {
         path: '/events/create',
         element: (
@@ -53,7 +53,7 @@ export const routes: RouteObject[] = [
           </ProtectedRoute>
         )
       },
-      // Participant: My Registrations
+                                      
       {
         path: '/my-registrations',
         element: (
@@ -62,7 +62,7 @@ export const routes: RouteObject[] = [
           </ProtectedRoute>
         )
       },
-      // Organizer: My Events
+                             
       {
         path: '/my-events',
         element: (
@@ -71,7 +71,7 @@ export const routes: RouteObject[] = [
           </ProtectedRoute>
         )
       },
-      // Organizer: Manage Event
+                                
       {
         path: '/events/:eventId/manage',
         element: (
@@ -80,7 +80,7 @@ export const routes: RouteObject[] = [
           </ProtectedRoute>
         )
       },
-      // Participant: Submit Work
+                                 
       {
         path: '/events/:eventId/submission',
         element: (
@@ -89,7 +89,7 @@ export const routes: RouteObject[] = [
           </ProtectedRoute>
         )
       },
-      // Participant: Edit Submission
+                                     
       {
         path: '/events/:eventId/submission/edit',
         element: (
@@ -98,7 +98,7 @@ export const routes: RouteObject[] = [
           </ProtectedRoute>
         )
       },
-      // Organizer: View All Submissions
+                                        
       {
         path: '/events/:eventId/submissions',
         element: (
@@ -107,7 +107,7 @@ export const routes: RouteObject[] = [
           </ProtectedRoute>
         )
       },
-      // Organizer/Judge: Grade Submission
+                                          
       {
         path: '/events/:eventId/submissions/:submissionId/view',
         element: (

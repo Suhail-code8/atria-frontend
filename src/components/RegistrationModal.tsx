@@ -25,7 +25,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
 
   const handleChange = (fieldId: string, value: any) => {
     setAnswers(prev => ({ ...prev, [fieldId]: value }));
-    // Clear error when user starts typing
+                                          
     if (errors[fieldId]) {
       setErrors(prev => {
         const newErrors = { ...prev };

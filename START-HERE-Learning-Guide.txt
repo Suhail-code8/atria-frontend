@@ -1,0 +1,261 @@
+===============================================================================
+                    QUICK START GUIDE - LEARNING YOUR CODE
+===============================================================================
+
+Hi! This guide will help you understand your Atria Event Management code using 
+Gemini AI. Follow these steps:
+
+===============================================================================
+STEP 1: OPEN GEMINI
+===============================================================================
+
+Go to: https://gemini.google.com
+
+===============================================================================
+STEP 2: START WITH THE BASICS (Recommended Order)
+===============================================================================
+
+Copy and paste these prompts ONE AT A TIME into Gemini:
+
+---[ PROMPT 1: TypeScript Basics ]---
+
+I'm learning TypeScript and need to understand the basics. Please explain:
+
+1. What is TypeScript and how is it different from JavaScript?
+2. What are types, interfaces, and type annotations?
+3. Explain these TypeScript features with examples:
+   - Basic types (string, number, boolean, array)
+   - Interfaces
+   - Type aliases
+   - Enums
+   - Generics
+   - Optional properties (?)
+   - Union types (|)
+
+Please use simple examples and explain like I'm a beginner.
+
+---[ PROMPT 2: React Basics ]---
+
+I'm building a React application. Please explain:
+
+1. What is React and how does it work?
+2. What are components, props, and state?
+3. What is the difference between functional and class components?
+4. What are React Hooks and why do we use them?
+5. Explain these hooks with examples:
+   - useState
+   - useEffect
+   - useNavigate (from react-router-dom)
+
+Keep explanations beginner-friendly with code examples.
+
+---[ PROMPT 3: Understanding Forms in React ]---
+
+I have forms in my React app. Please explain:
+
+1. How to handle form inputs in React?
+2. What is controlled vs uncontrolled components?
+3. How to handle form submission?
+4. How to manage multiple form fields with one state object?
+5. How to handle different input types (text, checkbox, select)?
+
+Show me a complete example of a form with multiple field types.
+
+===============================================================================
+STEP 3: UNDERSTAND YOUR SPECIFIC CODE
+===============================================================================
+
+Now that you know the basics, let's understand YOUR code!
+
+---[ PROMPT 4: Understanding Your Event Model ]---
+
+I have this Event model in my code. Please explain every part:
+
+[PASTE THE CONTENT FROM: event-creation-code.txt - Event Model section]
+
+Specifically explain:
+1. What is each field for?
+2. What do the enums (EventType, EventStatus) do?
+3. What are the capabilities and how do they work?
+4. What is the registrationForm array?
+5. How does the schema validation work?
+
+---[ PROMPT 5: Understanding Event Creation ]---
+
+I want to understand how event creation works in my app. Here's the code:
+
+[PASTE THE CONTENT FROM: event-creation-code.txt - CreateEvent Component section]
+
+Please explain:
+1. How does the form state management work?
+2. What happens when I submit the form?
+3. How do capabilities get toggled?
+4. How are dates handled?
+5. What is the flow from form submission to database?
+
+Walk me through the entire process step-by-step.
+
+---[ PROMPT 6: Understanding Event Lifecycle ]---
+
+My app has an event lifecycle system. Here's the code:
+
+[PASTE THE CONTENT FROM: event-creation-code.txt - Event Lifecycle section]
+
+Please explain:
+1. What is a state machine/lifecycle?
+2. How do the transition rules work?
+3. What are preconditions and why are they needed?
+4. How does the validation prevent invalid transitions?
+5. Give me examples of valid and invalid transitions.
+
+Explain like I'm learning about state management for the first time.
+
+===============================================================================
+STEP 4: UNDERSTAND THE COMPLETE SYSTEM
+===============================================================================
+
+---[ PROMPT 7: Complete System Overview ]---
+
+I want to understand my entire event management system. Here's what I have:
+
+FRONTEND:
+- CreateEvent component (creates events)
+- EventManagement component (manages events)
+- EventList component (displays events)
+- Event API client (communicates with backend)
+
+BACKEND:
+- Event Model (database schema)
+- Event Controller (handles requests)
+- Event Service (business logic)
+- Event Lifecycle (state transitions)
+- Event Routes (API endpoints)
+
+Please explain:
+1. How do all these pieces work together?
+2. What is the flow from user clicking "Create Event" to event being saved?
+3. What is the flow for transitioning event states?
+4. How does data flow between frontend and backend?
+5. What are the key concepts I need to understand?
+
+Create a step-by-step guide showing how everything connects.
+
+===============================================================================
+STEP 5: WHEN YOU GET STUCK
+===============================================================================
+
+Use this template for ANY question:
+
+---[ CUSTOM QUESTION TEMPLATE ]---
+
+I'm working on [describe what you're trying to do] and need to understand 
+[specific concept or code].
+
+Here's my current code:
+[Paste the specific code you're confused about]
+
+Please explain:
+1. What is this code doing?
+2. Why is it written this way?
+3. How would I modify it for [your specific use case]?
+
+Use simple language and examples.
+
+===============================================================================
+HELPFUL TIPS
+===============================================================================
+
+✅ DO:
+- Ask one question at a time
+- Copy the EXACT prompt text
+- Paste your actual code when asked
+- Ask follow-up questions if confused
+- Take notes on what you learn
+- Try modifying code after understanding it
+
+❌ DON'T:
+- Try to learn everything at once
+- Skip the basics
+- Be afraid to ask "dumb" questions
+- Give up if you don't understand immediately
+
+===============================================================================
+FILES YOU HAVE
+===============================================================================
+
+1. event-creation-code.txt
+   - Contains ALL your event-related code
+   - Use this to copy/paste code into Gemini
+
+2. gemini-learning-guide.txt
+   - Complete list of 30+ prompts
+   - Organized by topic
+   - Use for advanced learning
+
+3. START-HERE-Learning-Guide.txt (this file)
+   - Quick start guide
+   - Essential prompts only
+   - Perfect for beginners
+
+===============================================================================
+LEARNING PATH SUMMARY
+===============================================================================
+
+Week 1: TypeScript & React Basics (Prompts 1-3)
+Week 2: Your Event Code (Prompts 4-6)
+Week 3: Complete System Understanding (Prompt 7)
+Week 4: Build Something New!
+
+===============================================================================
+ADDITIONAL LEARNING PROMPTS
+===============================================================================
+
+---[ Understanding Backend ]---
+
+I'm working with a Node.js backend. Please explain:
+
+1. What is Node.js and Express?
+2. What are routes, controllers, and services?
+3. What is middleware and how does it work?
+4. What are HTTP methods (GET, POST, PUT, DELETE)?
+5. How does async/await work in JavaScript?
+
+Use simple examples for each concept.
+
+---[ Understanding MongoDB ]---
+
+My backend uses MongoDB with Mongoose. Please explain:
+
+1. What is MongoDB and how is it different from SQL databases?
+2. What is Mongoose and what are schemas/models?
+3. How do CRUD operations work (Create, Read, Update, Delete)?
+4. What is validation in Mongoose?
+
+Show examples of defining and using a model.
+
+---[ Understanding API Calls ]---
+
+I have this API client code:
+
+[PASTE events.api.ts code from event-creation-code.txt]
+
+Please explain:
+1. What is axios and how does it work?
+2. How do these API calls work?
+3. How does error handling work?
+4. How do I use these functions in my components?
+
+Show me examples of calling these APIs from a React component.
+
+===============================================================================
+NEED MORE HELP?
+===============================================================================
+
+For more detailed prompts and advanced topics, see:
+- gemini-learning-guide.txt (Complete guide with 30+ prompts)
+
+Remember: Learning to code is a journey. Take it one step at a time!
+
+===============================================================================
+                              GOOD LUCK! 🚀
+===============================================================================

@@ -1,0 +1,837 @@
+﻿# Event Creation and Configuration - Complete Code Extraction
+
+This document contains all code related to event creation and configuration from the Atria platform, organized by component.
+
+---
+
+## Table of Contents
+
+1. [Frontend Components](#frontend-components)
+   - [CreateEvent Component](#createevent-component)
+   - [EventManagement Component](#eventmanagement-component)
+   - [Event API Client](#event-api-client)
+2. [Backend Services](#backend-services)
+   - [Event Model](#event-model)
+   - [Event Controller](#event-controller)
+   - [Event Service](#event-service)
+   - [Event Routes](#event-routes)
+   - [Event Lifecycle](#event-lifecycle)
+3. [Supporting Components](#supporting-components)
+   - [EventCard](#eventcard)
+   - [EventList](#eventlist)
+   - [MyEvents](#myevents)
+   - [EventDetails](#eventdetails)
+
+---
+
+## Frontend Components
+
+### CreateEvent Component
+
+**File:** `d:\Atria-Frontend\src\events\CreateEvent.tsx`
+
+```tsx
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { eventsApi } from '../api/events.api'
+import { EventType } from '../types'
+import Button from '../components/Button'
+import Input from '../components/Input'
+import { AlertCircle } from 'lucide-react'
+import { getErrorMessage } from '../utils/formatters'
+
+const EVENT_TYPES = [
+  { value: 'CONFERENCE', label: 'Conference' },
+  { value: 'FEST', label: 'Festival' },
+  { value: 'PROGRAM', label: 'Program' },
+  { value: 'CUSTOM', label: 'Custom' }
+]
+
+export const CreateEvent = () => {
+  const navigate = useNavigate()
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    eventType: 'CONFERENCE' as EventType,
+    startDate: '',
+    endDate: '',
+    registrationStartDate: '',
+    registrationEndDate: '',
+    isPublic: true,
+    capabilities: {
+      registration: false,
+      submissions: false,
+      review: false,
+      teams: false,
+      scoring: false,
+      sessions: false,
+      realtime: false
+    }
+  })
+  const [error, setError] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target as any
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
+    }))
+  }
+
+  const handleCapabilityChange = (capability: keyof typeof formData.capabilities) => {
+    setFormData(prev => ({
+      ...prev,
+      capabilities: {
+        ...prev.capabilities,
+        [capability]: !prev.capabilities[capability]
+      }
+    }))
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    setIsLoading(true)
+
+    try {
+      const response = await eventsApi.createEvent(formData)
+      navigate(`/events/${response.data.data._id}`)
+    } catch (err: any) {
+      setError(getErrorMessage(err))
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  return (
+    <div className="max-w-2xl">
+      <h1 className="text-3xl font-bold text-gray-900 mb-8">Create New Event</h1>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex gap-3">
+          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+          <p className="text-red-800">{error}</p>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-8 space-y-6">
+        <Input
+          label="Event Title"
+          type="text"
+          name="title"
+          value={formData.title}
+          onChange={handleChange}
+          required
+        />
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Description
+          </label>
+          <textarea
+            name="description"
+            value={formData.description}
+            onChange={handleChange}
+            rows={5}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            required
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Event Type
+            </label>
+            <select
+              name="eventType"
+              value={formData.eventType}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            >
+              {EVENT_TYPES.map(t => (
+                <option key={t.value} value={t.value}>{t.label}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Visibility
+            </label>
+            <select
+              name="isPublic"
+              value={formData.isPublic ? 'true' : 'false'}
+              onChange={(e) => setFormData(prev => ({ ...prev, isPublic: e.target.value === 'true' }))}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            >
+              <option value="true">Public</option>
+              <option value="false">Private</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-6">
+          <Input
+            label="Start Date"
+            type="datetime-local"
+            name="startDate"
+            value={formData.startDate}
+            onChange={handleChange}
+            required
+          />
+          <Input
+            label="End Date"
+            type="datetime-local"
+            name="endDate"
+            value={formData.endDate}
+            onChange={handleChange}
+            required
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-6">
+          <Input
+            label="Registration Start Date"
+            type="datetime-local"
+            name="registrationStartDate"
+            value={formData.registrationStartDate}
+            onChange={handleChange}
+          />
+          <Input
+            label="Registration End Date"
+            type="datetime-local"
+            name="registrationEndDate"
+            value={formData.registrationEndDate}
+            onChange={handleChange}
+          />
+        </div>
+
+        <div className="border-t pt-6">
+          <p className="text-sm font-medium text-gray-700 mb-4">Capabilities & Features</p>
+          <div className="space-y-3">
+            <label className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                checked={formData.capabilities.registration}
+                onChange={() => handleCapabilityChange('registration')}
+                className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+              />
+              <span className="text-gray-700">Enable Registration</span>
+            </label>
+            <label className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                checked={formData.capabilities.submissions}
+                onChange={() => handleCapabilityChange('submissions')}
+                className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+              />
+              <span className="text-gray-700">Enable Submissions</span>
+            </label>
+            <label className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                checked={formData.capabilities.teams}
+                onChange={() => handleCapabilityChange('teams')}
+                className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+              />
+              <span className="text-gray-700">Enable Teams</span>
+            </label>
+            <label className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                checked={formData.capabilities.review}
+                onChange={() => handleCapabilityChange('review')}
+                className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+              />
+              <span className="text-gray-700">Enable Review</span>
+            </label>
+            <label className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                checked={formData.capabilities.scoring}
+                onChange={() => handleCapabilityChange('scoring')}
+                className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+              />
+              <span className="text-gray-700">Enable Scoring</span>
+            </label>
+            <label className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                checked={formData.capabilities.sessions}
+                onChange={() => handleCapabilityChange('sessions')}
+                className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+              />
+              <span className="text-gray-700">Enable Sessions</span>
+            </label>
+            <label className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                checked={formData.capabilities.realtime}
+                onChange={() => handleCapabilityChange('realtime')}
+                className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+              />
+              <span className="text-gray-700">Enable Real-time Updates</span>
+            </label>
+          </div>
+        </div>
+
+        <div className="flex gap-4 pt-6 border-t">
+          <Button type="submit" variant="primary" isLoading={isLoading}>
+            Create Event
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => navigate('/events')}
+          >
+            Cancel
+          </Button>
+        </div>
+      </form>
+    </div>
+  )
+}
+
+export default CreateEvent
+```
+
+---
+
+### EventManagement Component
+
+**File:** `d:\Atria-Frontend\src\events\EventManagement.tsx`
+
+This component handles event configuration updates, state transitions, and analytics display.
+
+**Key Features:**
+- Event details editing (title, description, visibility)
+- Capability management (registration, submissions, teams, etc.)
+- Registration form builder integration
+- Event lifecycle state transitions
+- Real-time analytics display
+
+**State Transition Flow:**
+```
+DRAFT â†’ PUBLISHED â†’ REGISTRATION_OPEN â†’ ONGOING â†’ COMPLETED â†’ ARCHIVED
+                â†“           â†“              â†“
+            CANCELLED   CANCELLED      CANCELLED
+```
+
+**Configuration Capabilities:**
+1. **Registration**: Enable participant registration with custom forms
+2. **Submissions**: Allow participants to submit work/projects
+3. **Review**: Enable submission review and scoring
+4. **Teams**: Support team-based participation
+5. **Scoring**: Enable scoring system for submissions
+6. **Sessions**: Manage event sessions/schedules
+7. **Realtime**: Enable real-time updates
+
+---
+
+### Event API Client
+
+**File:** `d:\Atria-Frontend\src\api\events.api.ts`
+
+```typescript
+import axiosInstance from './axios'
+import { Event, EventStatus } from '../types'
+
+export interface EventAnalytics {
+  totalRegistrations: number
+  totalSubmissions: number
+  conversionRate: number
+  registrationsByDate: Array<{ date: string; count: number }>
+  submissionsByStatus: {
+    DRAFT: number
+    SUBMITTED: number
+    UNDER_REVIEW: number
+    ACCEPTED: number
+    REJECTED: number
+  }
+  averageScore: number | null
+  reviewedCount: number
+}
+
+export const eventsApi = {
+  listEvents: () =>
+    axiosInstance.get<{ success: boolean; data: Event[] }>('/events'),
+
+  getMyEvents: () =>
+    axiosInstance.get<{ success: boolean; data: Event[] }>('/events?organizerId=ME'),
+
+  getEvent: (eventId: string) =>
+    axiosInstance.get<{ success: boolean; data: Event }>(`/events/${eventId}`),
+
+  createEvent: (data: Partial<Event>) =>
+    axiosInstance.post<{ success: boolean; data: Event }>('/events', data),
+
+  updateEvent: (eventId: string, data: Partial<Event>) =>
+    axiosInstance.put<{ success: boolean; data: Event }>(`/events/${eventId}`, data),
+
+  deleteEvent: (eventId: string) =>
+    axiosInstance.delete<{ success: boolean; data: Event }>(`/events/${eventId}`),
+
+  transitionEvent: (eventId: string, targetState: EventStatus) =>
+    axiosInstance.post<{ success: boolean; message: string; data: Event }>(
+      `/events/${eventId}/transition`,
+      { targetState }
+    ),
+
+  getEventAnalytics: (eventId: string) =>
+    axiosInstance.get<{ success: boolean; data: EventAnalytics }>(
+      `/events/${eventId}/analytics`
+    )
+}
+```
+
+---
+
+## Backend Services
+
+### Event Model
+
+**File:** `d:\Desktop\Atria-Backend\src\modules\events\event.model.ts`
+
+```typescript
+import mongoose, { Schema, Document } from "mongoose";
+import { IUser } from "../users/user.model";
+
+/**
+ * Event Types
+ */
+export enum EventType {
+  CONFERENCE = "CONFERENCE",
+  FEST = "FEST",
+  PROGRAM = "PROGRAM",
+  CUSTOM = "CUSTOM"
+}
+
+/**
+ * Full Lifecycle States
+ */
+export enum EventStatus {
+  DRAFT = "DRAFT",
+  PUBLISHED = "PUBLISHED",
+  REGISTRATION_OPEN = "REGISTRATION_OPEN",
+  ONGOING = "ONGOING",
+  COMPLETED = "COMPLETED",
+  CANCELLED = "CANCELLED",
+  ARCHIVED = "ARCHIVED"
+}
+
+/**
+ * Capability Configuration Interface
+ */
+export interface EventCapabilities {
+  registration: boolean;
+  submissions: boolean;
+  review: boolean;
+  teams: boolean;
+  scoring: boolean;
+  sessions: boolean;
+  realtime: boolean;
+}
+
+/**
+ * Registration Form Field Interface
+ */
+export interface IRegistrationFormField {
+  id: string;
+  label: string;
+  type: 'text' | 'number' | 'email' | 'select' | 'checkbox' | 'textarea';
+  required: boolean;
+  options?: string[];
+  placeholder?: string;
+}
+
+/**
+ * Event Document Interface
+ */
+export interface IEvent extends Document {
+  title: string;
+  description: string;
+  eventType: EventType;
+
+  startDate: Date;
+  endDate: Date;
+
+  registrationStartDate?: Date;
+  registrationEndDate?: Date;
+
+  createdBy: mongoose.Types.ObjectId | string | IUser;
+  isPublic: boolean;
+
+  status: EventStatus;
+
+  capabilities: EventCapabilities;
+
+  registrationForm?: IRegistrationFormField[];
+
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+/**
+ * Event Schema
+ */
+const eventSchema = new Schema<IEvent>(
+  {
+    title: {
+      type: String,
+      required: true,
+      trim: true
+    },
+
+    description: {
+      type: String,
+      required: true,
+      trim: true
+    },
+
+    eventType: {
+      type: String,
+      enum: Object.values(EventType),
+      required: true
+    },
+
+    startDate: {
+      type: Date,
+      required: true
+    },
+
+    endDate: {
+      type: Date,
+      required: true
+    },
+
+    registrationStartDate: {
+      type: Date
+    },
+
+    registrationEndDate: {
+      type: Date
+    },
+
+    createdBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true
+    },
+
+    isPublic: {
+      type: Boolean,
+      default: true
+    },
+
+    status: {
+      type: String,
+      enum: Object.values(EventStatus),
+      default: EventStatus.DRAFT
+    },
+
+    capabilities: {
+      registration: { type: Boolean, default: false },
+      submissions: { type: Boolean, default: false },
+      review: { type: Boolean, default: false },
+      teams: { type: Boolean, default: false },
+      scoring: { type: Boolean, default: false },
+      sessions: { type: Boolean, default: false },
+      realtime: { type: Boolean, default: false }
+    },
+
+    registrationForm: [{
+      id: { type: String, required: true },
+      label: { type: String, required: true },
+      type: { 
+        type: String, 
+        enum: ['text', 'number', 'email', 'select', 'checkbox', 'textarea'],
+        required: true 
+      },
+      required: { type: Boolean, default: false },
+      options: [{ type: String }],
+      placeholder: { type: String }
+    }]
+  },
+  {
+    timestamps: true
+  }
+);
+
+export const Event = mongoose.model<IEvent>("Event", eventSchema);
+```
+
+---
+
+### Event Controller
+
+**File:** `d:\Desktop\Atria-Backend\src\modules\events\event.controller.ts`
+
+**Key Functions:**
+
+1. **createEvent**: Creates new event with all configuration
+2. **updateEvent**: Updates event details and capabilities
+3. **transitionEvent**: Manages event lifecycle transitions
+4. **getEventAnalytics**: Provides comprehensive event analytics
+
+```typescript
+// Create Event - Ensures Registration Dates & Form are saved
+export const createEvent = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const userId = req.user?.userId as string;
+    
+    const { 
+      title, 
+      description, 
+      eventType, 
+      startDate, 
+      endDate, 
+      isPublic,
+      registrationStartDate,
+      registrationEndDate,
+      capabilities,
+      registrationForm
+    } = req.body;
+
+    const event = await eventService.createEvent({
+      title, 
+      description, 
+      eventType, 
+      startDate, 
+      endDate, 
+      isPublic,
+      registrationStartDate, 
+      registrationEndDate,
+      capabilities,
+      registrationForm
+    }, userId);
+
+    res.status(201).json({ success: true, data: event });
+  } catch (err) {
+    next(err);
+  }
+};
+```
+
+---
+
+### Event Service
+
+**File:** `d:\Desktop\Atria-Backend\src\modules\events\event.service.ts`
+
+**Key Validation Logic:**
+
+1. **Date Validation**: Ensures end date is after start date
+2. **Registration Window Validation**: Validates registration period
+3. **Capability Management**: Initializes and manages event capabilities
+4. **Access Control**: Enforces creator-only edit permissions
+
+```typescript
+export const createEvent = async (data: CreateEventInput, userId: string) => {
+  // Validate dates
+  const startDate = new Date(data.startDate);
+  const endDate = new Date(data.endDate);
+  
+  if (endDate <= startDate) {
+    throw new Error("Event end date must be after start date");
+  }
+
+  // Validate registration window if provided
+  if (data.registrationStartDate && data.registrationEndDate) {
+    const regStart = new Date(data.registrationStartDate);
+    const regEnd = new Date(data.registrationEndDate);
+    
+    if (regEnd <= regStart) {
+      throw new Error("Registration end date must be after start date");
+    }
+  }
+
+  // Initialize capabilities with defaults
+  const capabilities = {
+    registration: false,
+    submissions: false,
+    review: false,
+    teams: false,
+    scoring: false,
+    sessions: false,
+    realtime: false,
+    ...data.capabilities
+  };
+
+  const event = await Event.create({
+    title: data.title,
+    description: data.description,
+    eventType: data.eventType,
+    startDate,
+    endDate,
+    registrationStartDate: data.registrationStartDate,
+    registrationEndDate: data.registrationEndDate,
+    registrationForm: data.registrationForm,
+    createdBy: new mongoose.Types.ObjectId(userId),
+    isPublic: data.isPublic ?? true,
+    status: EventStatus.DRAFT,
+    capabilities
+  });
+
+  return sanitizeEvent(event);
+};
+```
+
+---
+
+### Event Lifecycle
+
+**File:** `d:\Desktop\Atria-Backend\src\modules\events\event.lifecycle.ts`
+
+**Transition Rules:**
+
+```typescript
+const allowedTransitions: Record<EventStatus, EventStatus[]> = {
+  [EventStatus.DRAFT]: [
+    EventStatus.PUBLISHED,
+    EventStatus.CANCELLED
+  ],
+
+  [EventStatus.PUBLISHED]: [
+    EventStatus.REGISTRATION_OPEN,
+    EventStatus.CANCELLED,
+    EventStatus.ARCHIVED
+  ],
+
+  [EventStatus.REGISTRATION_OPEN]: [
+    EventStatus.ONGOING,
+    EventStatus.CANCELLED
+  ],
+
+  [EventStatus.ONGOING]: [
+    EventStatus.COMPLETED,
+    EventStatus.CANCELLED
+  ],
+
+  [EventStatus.COMPLETED]: [
+    EventStatus.ARCHIVED
+  ],
+
+  [EventStatus.CANCELLED]: [
+    EventStatus.ARCHIVED
+  ],
+
+  [EventStatus.ARCHIVED]: []
+};
+```
+
+**Precondition Validation:**
+
+- **PUBLISHED**: Requires title, description, valid dates
+- **REGISTRATION_OPEN**: Requires registration capability enabled and valid registration window
+- **ONGOING**: Must be after event start date
+- **COMPLETED**: Must be after event end date
+
+---
+
+### Event Routes
+
+**File:** `d:\Desktop\Atria-Backend\src\modules\events\event.routes.ts`
+
+```typescript
+import { Router } from "express";
+import * as controller from "./event.controller";
+import { authMiddleware, optionalAuthMiddleware } from "../../middlewares/auth.middleware";
+import { roleMiddleware } from "../../middlewares/role.middleware";
+import { UserRole } from "../users/user.model";
+
+const router = Router();
+
+// Public routes
+router.get("/", optionalAuthMiddleware, controller.listEvents);
+router.get("/:eventId", controller.getEvent);
+
+// Protected routes - Organizer only
+router.post("/", authMiddleware, roleMiddleware(UserRole.ORGANIZER), controller.createEvent);
+router.put("/:eventId", authMiddleware, roleMiddleware(UserRole.ORGANIZER), controller.updateEvent);
+router.delete("/:eventId", authMiddleware, roleMiddleware(UserRole.ORGANIZER), controller.deleteEvent);
+router.post("/:eventId/transition", authMiddleware, roleMiddleware(UserRole.ORGANIZER), controller.transitionEvent);
+router.get("/:eventId/analytics", authMiddleware, roleMiddleware(UserRole.ORGANIZER), controller.getEventAnalytics);
+
+export default router;
+```
+
+---
+
+## Supporting Components
+
+### EventCard
+
+**File:** `d:\Atria-Frontend\src\events\EventCard.tsx`
+
+Displays event summary in card format with title, description, dates, and status badge.
+
+### EventList
+
+**File:** `d:\Atria-Frontend\src\events\EventList.tsx`
+
+Lists all public events with filtering by status. Shows "Create Event" button for organizers.
+
+### MyEvents
+
+**File:** `d:\Atria-Frontend\src\events\MyEvents.tsx`
+
+Displays events created by the current user with management options.
+
+### EventDetails
+
+**File:** `d:\Atria-Frontend\src\events\EventDetails.tsx`
+
+Shows complete event information with registration, submission, and participant management features.
+
+---
+
+## Configuration Summary
+
+### Event Types
+- CONFERENCE
+- FEST
+- PROGRAM
+- CUSTOM
+
+### Event Capabilities
+- **registration**: Enable participant registration
+- **submissions**: Allow project/work submissions
+- **review**: Enable submission review system
+- **teams**: Support team-based participation
+- **scoring**: Enable scoring/judging system
+- **sessions**: Manage event sessions
+- **realtime**: Enable real-time updates
+
+### Event Lifecycle States
+1. **DRAFT**: Initial state, not visible to public
+2. **PUBLISHED**: Visible to public, registration not yet open
+3. **REGISTRATION_OPEN**: Accepting participant registrations
+4. **ONGOING**: Event is currently running
+5. **COMPLETED**: Event has ended
+6. **CANCELLED**: Event was cancelled
+7. **ARCHIVED**: Event is archived (final state)
+
+### Registration Form Fields
+- **text**: Single-line text input
+- **number**: Numeric input
+- **email**: Email address input
+- **select**: Dropdown selection
+- **checkbox**: Boolean checkbox
+- **textarea**: Multi-line text input
+
+---
+
+## Key Implementation Notes
+
+1. **Date Handling**: All dates are stored as ISO strings and converted to Date objects on the backend
+2. **Capability Validation**: Registration capability must be enabled to transition to REGISTRATION_OPEN
+3. **Access Control**: Only event creators can update, delete, or transition events
+4. **Form Builder**: Dynamic registration forms can be configured with custom fields
+5. **Analytics**: Real-time analytics track registrations, submissions, and conversion rates
+6. **State Transitions**: Enforced through lifecycle rules with precondition validation

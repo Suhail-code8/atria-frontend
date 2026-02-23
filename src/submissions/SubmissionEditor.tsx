@@ -81,7 +81,7 @@ const SubmissionEditor = () => {
     try {
       const dataToSubmit: any = { ...formData }
       
-      // Add file if selected
+                             
       if (selectedFile) {
         dataToSubmit.file = selectedFile
       }
@@ -89,10 +89,10 @@ const SubmissionEditor = () => {
       const response = await submissionsApi.updateSubmission(eventId, submissionId, dataToSubmit)
       const updated = response.data.data
       setSubmission(updated)
-      setSelectedFile(null) // Clear file input after successful save
+      setSelectedFile(null)                                          
       setSuccessMessage('Draft saved successfully!')
       
-      // Clear success message after 3 seconds
+                                              
       setTimeout(() => setSuccessMessage(''), 3000)
     } catch (err: any) {
       setError(getErrorMessage(err))

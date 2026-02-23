@@ -3,7 +3,7 @@ import { eventsApi } from '../api/events.api'
 import { Event, EventStatus } from '../types'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
-// import Loader from '../components/Loader'
+                                            
 import { AlertCircle } from 'lucide-react'
 import EventCard from './EventCard'
 
@@ -40,7 +40,7 @@ export const EventList = () => {
 
   const visibleEvents = events.filter((event) => PUBLIC_STATUSES.has(String(event.status)))
 
-  // if (isLoading) return <Loader />
+                                     
 
   return (
     <div>

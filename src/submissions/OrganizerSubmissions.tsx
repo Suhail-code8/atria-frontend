@@ -17,7 +17,7 @@ const OrganizerSubmissions = () => {
   const [error, setError] = useState('')
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null)
   
-  // Track which dropdowns are open
+                                   
   const [openDropdown, setOpenDropdown] = useState<string | null>(null)
 
   useEffect(() => {
@@ -29,11 +29,11 @@ const OrganizerSubmissions = () => {
     
     setIsLoading(true)
     try {
-      // Load event details
+                           
       const eventRes = await eventsApi.getEvent(eventId)
       setEvent(eventRes.data.data)
       
-      // Load all submissions
+                             
       const submissionsRes = await submissionsApi.getEventSubmissions(eventId)
       setSubmissions(submissionsRes.data.data || [])
     } catch (err: any) {
@@ -52,7 +52,7 @@ const OrganizerSubmissions = () => {
     try {
       await submissionsApi.updateSubmissionStatus(eventId, submissionId, newStatus)
       
-      // Update local state
+                           
       setSubmissions((prev) =>
         prev.map((sub) =>
           sub._id === submissionId ? { ...sub, status: newStatus } : sub

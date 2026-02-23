@@ -1,21 +1,21 @@
 import axiosInstance from './axios'
 import { Submission, SubmissionStatus } from '../types'
 
-// Helper function to convert data to FormData
+                                              
 const toFormData = (data: any): FormData => {
   const formData = new FormData()
   
   Object.keys(data).forEach((key) => {
     const value = data[key]
     
-    // Skip undefined or null values
+                                    
     if (value === undefined || value === null) return
     
-    // Handle File objects
+                          
     if (value instanceof File) {
       formData.append(key, value)
     }
-    // Handle regular data
+                          
     else if (typeof value === 'object') {
       formData.append(key, JSON.stringify(value))
     }
@@ -28,7 +28,7 @@ const toFormData = (data: any): FormData => {
 }
 
 export const submissionsApi = {
-  // Get single submission
+                          
   getSubmission: (eventId: string, submissionId: string) =>
     axiosInstance.get<{ success: boolean; data: Submission }>(
       `/events/${eventId}/submissions/${submissionId}`
@@ -88,7 +88,7 @@ export const submissionsApi = {
     ),
 
   // Review/Grade submission (Organizer/Judge only)
-  reviewSubmission: (eventId: string, submissionId: string, data: { score: number; comment: string; status: SubmissionStatus }) =>
+  reviewSubmission: (eventId: string, submissionId: string, data: { score: number; comment?: string; status: SubmissionStatus }) =>
     axiosInstance.put<{ success: boolean; data: Submission }>(
       `/events/${eventId}/submissions/${submissionId}/review`,
       data
