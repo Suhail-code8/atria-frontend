@@ -6,6 +6,8 @@ import { Event, Participation } from '../types'
 import { useAuth } from '../auth/AuthContext'
 import Badge from '../components/Badge'
 import Button from '../components/Button'
+import EventAnnouncements from '../components/announcements/EventAnnouncements'
+import OrganizerAnnouncements from '../components/announcements/OrganizerAnnouncements'
                                             
 import Modal from '../components/Modal'
 import { RegistrationModal } from '../components/RegistrationModal'
@@ -174,6 +176,16 @@ export const EventDetails = () => {
           )}
         </div>
       </div>
+
+      <div className="mb-8">
+        <EventAnnouncements eventId={event._id} />
+      </div>
+
+      {isCreator && (
+        <div className="mb-8">
+          <OrganizerAnnouncements eventId={event._id} />
+        </div>
+      )}
 
       <Modal
         isOpen={showParticipants}
