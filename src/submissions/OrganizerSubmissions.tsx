@@ -67,7 +67,6 @@ const OrganizerSubmissions = () => {
 
   const getStatusOptions = (currentStatus: SubmissionStatus) => {
     const allStatuses = [
-      SubmissionStatus.SUBMITTED,
       SubmissionStatus.UNDER_REVIEW,
       SubmissionStatus.ACCEPTED,
       SubmissionStatus.REJECTED

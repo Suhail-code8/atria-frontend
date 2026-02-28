@@ -21,8 +21,54 @@ export interface EventCapabilities {
   review: boolean
   teams: boolean
   scoring: boolean
+  leaderboardPublished?: boolean
   sessions: boolean
   realtime: boolean
+}
+
+export interface EventLimits {
+  maxCategoriesPerTeam?: number
+  maxParticipantsPerCategoryPerTeam?: number
+  maxItemsPerTeam?: number
+  maxIndividualItemsPerParticipant?: number
+}
+
+export interface EventScoringRules {
+  places?: Record<string, number>
+  grades?: Record<string, number>
+}
+
+export interface CompetitionPlacePoints {
+  first: number
+  second: number
+  third: number
+}
+
+export interface CompetitionGradePoints {
+  a: number
+  b: number
+  c: number
+}
+
+export interface CompetitionItem {
+  _id: string
+  name: string
+  type: 'INDIVIDUAL' | 'GROUP' | 'SINGLE'
+  allowedCategories: Array<{ _id: string; name: string; description?: string }>
+  minParticipantsPerTeam?: number
+  maxParticipantsPerTeam: number
+  placePoints?: CompetitionPlacePoints
+  gradePoints?: CompetitionGradePoints
+}
+
+export interface CreateCompetitionItemPayload {
+  name: string
+  type: 'INDIVIDUAL' | 'GROUP' | 'SINGLE'
+  allowedCategories?: string[]
+  minParticipantsPerTeam?: number
+  maxParticipantsPerTeam?: number
+  placePoints?: CompetitionPlacePoints
+  gradePoints?: CompetitionGradePoints
 }
 
 export interface FormField {
@@ -38,7 +84,10 @@ export interface Event {
   _id: string
   title: string
   description: string
+  posterUrl?: string
   eventType: EventType
+  isCompetition?: boolean
+  isLeaderboardPublished?: boolean
   startDate: string | Date
   endDate: string | Date
   registrationStartDate?: string | Date
@@ -47,6 +96,8 @@ export interface Event {
   isPublic: boolean
   status: EventStatus
   capabilities: EventCapabilities
+  scoringRules?: EventScoringRules
+  limits?: EventLimits
   registrationForm?: FormField[]
   createdAt?: string
   updatedAt?: string

@@ -1,6 +1,14 @@
 import axiosInstance from './axios'
 import { Event, Participation, ParticipationStatus } from '../types'
 
+export interface IndividualLeaderboardEntry {
+  userId: string
+  name: string
+  email: string
+  team: string
+  individualPoints: number
+}
+
 export const participationApi = {
   registerForEvent: (eventId: string, answers?: Record<string, any>) =>
     axiosInstance.post<{ success: boolean; data: Participation }>(
@@ -32,5 +40,10 @@ export const participationApi = {
     axiosInstance.patch<{ success: boolean; data: Participation }>(
       `/participation/${participationId}/status`,
       { status }
+    ),
+
+  getEventLeaderboard: (eventId: string) =>
+    axiosInstance.get<{ success: boolean; data: IndividualLeaderboardEntry[] }>(
+      `/participation/event/${eventId}/leaderboard`
     )
 }

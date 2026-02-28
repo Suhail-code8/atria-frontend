@@ -33,6 +33,7 @@ export const CreateEvent = () => {
     title: '',
     description: '',
     eventType: 'CONFERENCE' as EventType,
+    isCompetition: false,
     startDate: '',
     endDate: '',
     registrationStartDate: '',
@@ -123,7 +124,11 @@ export const CreateEvent = () => {
       capabilities: {
         ...prev.capabilities,
         [capability]: !prev.capabilities[capability]
-      }
+      },
+      isCompetition:
+        prev.isCompetition ||
+        capability === 'teams' ||
+        capability === 'scoring'
     }))
   }
 
@@ -141,7 +146,15 @@ export const CreateEvent = () => {
     setIsLoading(true)
 
     try {
-      const response = await eventsApi.createEvent(formData)
+      const payload = {
+        ...formData,
+        isCompetition:
+          formData.isCompetition ||
+          formData.capabilities.teams ||
+          formData.capabilities.scoring
+      }
+
+      const response = await eventsApi.createEvent(payload)
       navigate(`/events/${response.data.data._id}`)
     } catch (err: any) {
       setError(getErrorMessage(err))
@@ -297,6 +310,26 @@ export const CreateEvent = () => {
               <p className="font-semibold">Step 3: Features</p>
             </div>
 
+            <div className="mb-4 rounded-xl border border-gray-200 p-4 bg-gray-50">
+              <label className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  checked={formData.isCompetition}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      isCompetition: e.target.checked
+                    }))
+                  }
+                  className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                />
+                <div>
+                  <p className="font-semibold text-gray-900">Competition Mode</p>
+                  <p className="text-sm text-gray-600">Enable team and scoring experiences for this event.</p>
+                </div>
+              </label>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {featureCards.map((feature) => {
                 const selected = formData.capabilities[feature.key]
@@ -344,6 +377,10 @@ export const CreateEvent = () => {
               <div className="rounded-lg border border-gray-200 p-4">
                 <p className="text-sm text-gray-500 mb-1">Event Type</p>
                 <p className="font-semibold text-gray-900">{formData.eventType}</p>
+              </div>
+              <div className="rounded-lg border border-gray-200 p-4">
+                <p className="text-sm text-gray-500 mb-1">Competition</p>
+                <p className="font-semibold text-gray-900">{formData.isCompetition ? 'Enabled' : 'Disabled'}</p>
               </div>
               <div className="rounded-lg border border-gray-200 p-4">
                 <p className="text-sm text-gray-500 mb-1">Visibility</p>

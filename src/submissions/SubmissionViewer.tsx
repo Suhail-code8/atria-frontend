@@ -23,8 +23,9 @@ const SubmissionViewer = (): JSX.Element => {
   const [comment, setComment] = useState('')
   const [isReviewing, setIsReviewing] = useState(false)
 
-  const isOrganizer = user?.role === UserRole.ORGANIZER
-  const canReview = isOrganizer && submission?.status !== SubmissionStatus.DRAFT
+  const isReviewer =
+    user?.role === UserRole.ORGANIZER || user?.role === UserRole.JUDGE
+  const canReview = isReviewer && submission?.status !== SubmissionStatus.DRAFT
 
   useEffect(() => {
     loadSubmission()

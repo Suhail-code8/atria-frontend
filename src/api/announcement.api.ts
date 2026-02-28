@@ -26,7 +26,7 @@ export const announcementApi = {
 
   create: (
     eventId: string,
-    data: { title: string; content: string; priority: string }
+    data: { title: string; content: string; priority: AnnouncementPriority }
   ) => axiosInstance.post<ApiResponse<IAnnouncement>>(`/announcements/${eventId}`, data),
 
   delete: (id: string) =>

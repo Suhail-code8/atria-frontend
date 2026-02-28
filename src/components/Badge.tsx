@@ -9,6 +9,7 @@ const getStatusBadgeColor = (status: string): string => {
     case ParticipationStatus.REGISTERED:
       return 'bg-blue-100 text-blue-800'
     case EventStatus.REGISTRATION_OPEN:
+      return 'bg-green-100 text-green-800'
     case SubmissionStatus.UNDER_REVIEW:
       return 'bg-purple-100 text-purple-800'
     case EventStatus.ONGOING:
@@ -44,9 +45,10 @@ interface BadgeProps {
   label?: string
   variant?: BadgeVariant
   children?: React.ReactNode
+  className?: string
 }
 
-const Badge = ({ status, label, variant, children }: BadgeProps) => {
+const Badge = ({ status, label, variant, children, className = '' }: BadgeProps) => {
   const colorClass = variant
     ? variantColors[variant]
     : status
@@ -54,7 +56,7 @@ const Badge = ({ status, label, variant, children }: BadgeProps) => {
       : 'bg-gray-100 text-gray-800'
 
   return (
-    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${colorClass}`}>
+    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${colorClass} ${className}`}>
       {children || label || status || 'N/A'}
     </span>
   )

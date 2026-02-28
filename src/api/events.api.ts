@@ -17,6 +17,10 @@ export interface EventAnalytics {
   reviewedCount: number
 }
 
+export interface GeneratePosterResponse {
+  posterUrl: string
+}
+
 export const eventsApi = {
   listEvents: () =>
     axiosInstance.get<{ success: boolean; data: Event[] }>('/events'),
@@ -45,5 +49,10 @@ export const eventsApi = {
   getEventAnalytics: (eventId: string) =>
     axiosInstance.get<{ success: boolean; data: EventAnalytics }>(
       `/events/${eventId}/analytics`
+    ),
+
+  generateEventPoster: (eventId: string) =>
+    axiosInstance.post<{ success: boolean; message?: string; data: GeneratePosterResponse }>(
+      `/events/${eventId}/poster/generate`
     )
 }

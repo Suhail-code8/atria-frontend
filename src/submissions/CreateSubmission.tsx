@@ -23,7 +23,7 @@ const CreateSubmissionForm = ({ eventId, onSuccess }: CreateSubmissionFormProps)
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    contentType: 'CUSTOM' as ContentType
+    type: 'CUSTOM' as ContentType
   })
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -85,8 +85,8 @@ const CreateSubmissionForm = ({ eventId, onSuccess }: CreateSubmissionFormProps)
           Content Type
         </label>
         <select
-          name="contentType"
-          value={formData.contentType}
+          name="type"
+          value={formData.type}
           onChange={handleChange}
           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
         >

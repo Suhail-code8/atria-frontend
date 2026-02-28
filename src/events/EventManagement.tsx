@@ -42,6 +42,8 @@ export const EventManagement = () => {
   const [editData, setEditData] = useState({
     title: "",
     description: "",
+    isCompetition: false,
+    isLeaderboardPublished: false,
     isPublic: true,
     registrationStartDate: "",
     registrationEndDate: "",
@@ -70,6 +72,8 @@ export const EventManagement = () => {
       setEditData({
         title: eventData.title,
         description: eventData.description,
+        isCompetition: eventData.isCompetition === true,
+        isLeaderboardPublished: eventData.isLeaderboardPublished === true,
         isPublic: eventData.isPublic,
         registrationStartDate: eventData.registrationStartDate
           ? new Date(eventData.registrationStartDate).toISOString().slice(0, 16)
@@ -135,7 +139,15 @@ export const EventManagement = () => {
     setError("");
 
     try {
-      const res = await eventsApi.updateEvent(eventId, editData);
+      const payload = {
+        ...editData,
+        isCompetition:
+          editData.isCompetition ||
+          editData.capabilities.teams ||
+          editData.capabilities.scoring
+      };
+
+      const res = await eventsApi.updateEvent(eventId, payload);
       setEvent(res.data.data);
     } catch (err: any) {
       setError(getErrorMessage(err));
@@ -522,6 +534,24 @@ export const EventManagement = () => {
                     />
                   </div>
                 )}
+
+                <div className="rounded-lg border border-gray-200 p-4 bg-gray-50">
+                  <label className="flex items-start gap-3">
+                    <input
+                      type="checkbox"
+                      name="isLeaderboardPublished"
+                      checked={editData.isLeaderboardPublished}
+                      onChange={handleEditChange}
+                      className="w-4 h-4 mt-0.5 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                    />
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">Publish Leaderboards</p>
+                      <p className="text-xs text-gray-600 mt-1">
+                        Make current scores visible to all participants. Keep unchecked to hide scores until the final announcement.
+                      </p>
+                    </div>
+                  </label>
+                </div>
 
                 <div className="border-t pt-6">
                   <p className="text-sm font-medium text-gray-700 mb-4">

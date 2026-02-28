@@ -6,9 +6,11 @@ import ProtectedRoute from './components/ProtectedRoute'
 import Login from './auth/Login'
 import Register from './auth/Register'
 import EventList from './events/EventList'
-import EventDetails from './events/EventDetails'
+import EventLayout from './events/EventLayout'
+import EventOverview from './events/EventOverview'
+import EventTeamHub from './events/EventTeamHub'
+import EventManage from './events/EventManage'
 import CreateEvent from './events/CreateEvent'
-import EventManagement from './events/EventManagement'
 import MyRegistrations from './events/MyRegistrations'
 import MyEvents from './events/MyEvents'
 import ParticipantSubmission from './submissions/ParticipantSubmission'
@@ -38,8 +40,34 @@ export const routes: RouteObject[] = [
         element: <EventList />                             
       },
       {
-        path: '/events/:eventId',
-        element: <EventDetails />                             
+        path: '/events/:id',
+        element: <EventLayout />,
+        children: [
+          {
+            index: true,
+            element: <EventOverview />
+          },
+          {
+            path: 'team',
+            element: <EventTeamHub />
+          },
+          {
+            path: 'manage',
+            element: (
+              <ProtectedRoute allowedRoles={[UserRole.ORGANIZER]}>
+                <EventManage />
+              </ProtectedRoute>
+            )
+          },
+          {
+            path: 'manage/:section',
+            element: (
+              <ProtectedRoute allowedRoles={[UserRole.ORGANIZER]}>
+                <EventManage />
+              </ProtectedRoute>
+            )
+          }
+        ]
       },
 
                                                     
@@ -72,14 +100,6 @@ export const routes: RouteObject[] = [
         )
       },
                                 
-      {
-        path: '/events/:eventId/manage',
-        element: (
-          <ProtectedRoute allowedRoles={[UserRole.ORGANIZER]}>
-            <EventManagement />
-          </ProtectedRoute>
-        )
-      },
                                  
       {
         path: '/events/:eventId/submission',
