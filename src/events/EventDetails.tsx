@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { useLocation, useParams } from "react-router-dom";
+import { useLocation, useParams, useSearchParams } from "react-router-dom";
 import { eventsApi } from "../api/events.api";
 import { participationApi } from "../api/participation.api";
-import { Event, Participation, UserRole } from "../types";
+import { Event, Participation, ParticipationStatus, UserRole } from "../types";
 import { useAuth } from "../auth/AuthContext";
 import Badge from "../components/Badge";
 import Button from "../components/Button";
@@ -31,6 +31,7 @@ import { Link } from "react-router-dom";
 export const EventDetails = () => {
   const { eventId } = useParams<{ eventId: string }>();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
 
   const pathEventId = location.pathname.split("/").filter(Boolean).pop();
   const effectiveEventId = eventId || pathEventId;
@@ -41,9 +42,75 @@ export const EventDetails = () => {
   );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [bookingNotice, setBookingNotice] = useState("");
+  const [lockCountdown, setLockCountdown] = useState("");
+  const [isRetryingPayment, setIsRetryingPayment] = useState(false);
+  const [isRefreshingPayment, setIsRefreshingPayment] = useState(false);
+  const [isLaunchingCheckout, setIsLaunchingCheckout] = useState(false);
   const [showParticipants, setShowParticipants] = useState(false);
   const [showRegistrationModal, setShowRegistrationModal] = useState(false);
   const [showOrganizerTools, setShowOrganizerTools] = useState(false);
+
+  const launchPaymentCheckout = async (pendingParticipation: Participation) => {
+    if (!event || !pendingParticipation.razorpayOrderId) return;
+
+    setIsLaunchingCheckout(true);
+
+    try {
+      const scriptLoaded = await new Promise<boolean>((resolve) => {
+        if ((window as any).Razorpay) return resolve(true);
+        const script = document.createElement('script');
+        script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+        script.onload = () => resolve(true);
+        script.onerror = () => resolve(false);
+        document.body.appendChild(script);
+      });
+
+      if (!scriptLoaded) {
+        setError('Payment gateway failed to load');
+        return;
+      }
+
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID as string,
+        amount: Math.round(Number(event.price ?? 0) * 100),
+        currency: 'INR',
+        order_id: pendingParticipation.razorpayOrderId,
+        handler: async (paymentResponse: {
+          razorpay_order_id: string;
+          razorpay_payment_id: string;
+          razorpay_signature: string;
+        }) => {
+          try {
+            const verifyRes = await participationApi.verifyPayment({
+              razorpay_order_id: paymentResponse.razorpay_order_id,
+              razorpay_payment_id: paymentResponse.razorpay_payment_id,
+              razorpay_signature: paymentResponse.razorpay_signature,
+            });
+            setParticipation((verifyRes.data as any).data ?? pendingParticipation);
+            setShowRegistrationModal(false);
+            setError('');
+            setBookingNotice('Payment verified. Your ticket is confirmed.');
+          } catch (err: unknown) {
+            setError(getErrorMessage(err));
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            setParticipation(pendingParticipation);
+            setShowRegistrationModal(false);
+            setError('Payment was not completed. You can retry from this page.');
+            setBookingNotice('Seat is temporarily locked. Complete payment before lock expires.');
+          },
+        },
+      };
+
+      const rzp = new (window as any).Razorpay(options);
+      rzp.open();
+    } finally {
+      setIsLaunchingCheckout(false);
+    }
+  };
 
   useEffect(() => {
     loadEvent(effectiveEventId);
@@ -68,7 +135,7 @@ export const EventDetails = () => {
     setIsLoading(true);
 
     try {
-      const eventRes = await eventsApi.getEvent(id);
+      const eventRes = await eventsApi.getEvent(id, searchParams.get('code') ?? undefined);
       console.log("[EventDetails] api response", eventRes);
       setEvent(eventRes.data.data);
       setError("");
@@ -93,14 +160,103 @@ export const EventDetails = () => {
     if (!eventId) return;
     try {
       const res = await participationApi.registerForEvent(eventId, answers);
-      setParticipation(res.data.data);
-      setShowRegistrationModal(false);
-      setError("");
+      const result = res.data.data;
+
+      if (
+        result.status === ParticipationStatus.PENDING_PAYMENT &&
+        result.razorpayOrderId
+      ) {
+        setParticipation(result);
+        setBookingNotice('Seat locked for 10 minutes. Complete payment to confirm your ticket.');
+        await launchPaymentCheckout(result);
+      } else {
+        setParticipation(result);
+        setShowRegistrationModal(false);
+        setError('');
+        if (result.status === ParticipationStatus.WAITLISTED) {
+          setBookingNotice('Event is full. You have been added to the waitlist.');
+        } else {
+          setBookingNotice('Registration completed successfully.');
+        }
+      }
     } catch (err: any) {
       setError(getErrorMessage(err));
       throw err;
     }
   };
+
+  const handleRetryPayment = async () => {
+    if (!event) return;
+    setIsRetryingPayment(true);
+    try {
+      const res = await participationApi.retryPayment(event._id);
+      const pendingParticipation = res.data.data;
+      setParticipation(pendingParticipation);
+
+      if (
+        pendingParticipation.status === ParticipationStatus.PENDING_PAYMENT &&
+        pendingParticipation.razorpayOrderId
+      ) {
+        setBookingNotice('New payment session created. Complete payment before lock expires.');
+        await launchPaymentCheckout(pendingParticipation);
+      } else if (pendingParticipation.status === ParticipationStatus.WAITLISTED) {
+        setBookingNotice('Event is currently full. You are in the waitlist.');
+      }
+    } catch (err: unknown) {
+      setError(getErrorMessage(err));
+    } finally {
+      setIsRetryingPayment(false);
+    }
+  };
+
+  const handleRefreshPaymentStatus = async (silent = false) => {
+    if (!event) return;
+    if (!silent) setIsRefreshingPayment(true);
+    try {
+      const res = await participationApi.getPaymentStatus(event._id);
+      setParticipation(res.data.data);
+      if (!silent) setError('');
+    } catch (err: unknown) {
+      if (!silent) setError(getErrorMessage(err));
+    } finally {
+      if (!silent) setIsRefreshingPayment(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!event?._id || participation?.status !== ParticipationStatus.PENDING_PAYMENT) {
+      setLockCountdown('');
+      return;
+    }
+
+    const updateCountdown = () => {
+      if (!participation.lockedUntil) {
+        setLockCountdown('No lock window available');
+        return;
+      }
+
+      const remainingMs = new Date(participation.lockedUntil).getTime() - Date.now();
+      if (remainingMs <= 0) {
+        setLockCountdown('Lock expired');
+        return;
+      }
+
+      const minutes = Math.floor(remainingMs / 60000);
+      const seconds = Math.floor((remainingMs % 60000) / 1000);
+      setLockCountdown(`${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')} remaining`);
+    };
+
+    updateCountdown();
+    const countdownInterval = setInterval(updateCountdown, 1000);
+    const pollInterval = setInterval(() => {
+      handleRefreshPaymentStatus(true);
+    }, 25000);
+
+    return () => {
+      clearInterval(countdownInterval);
+      clearInterval(pollInterval);
+    };
+  }, [event?._id, participation?.status, participation?.lockedUntil]);
 
   if (isLoading)
     return <div className="text-center py-12">Loading event...</div>;
@@ -122,9 +278,13 @@ export const EventDetails = () => {
   const isOrganizer = user?.role === UserRole.ORGANIZER;
   const canViewOrganizerTools =
     isCreator && isOrganizer && event.isCompetition === true;
-  const isRegistered = !!participation;
+  const hasParticipation = !!participation;
+  const isPaymentPending = participation?.status === ParticipationStatus.PENDING_PAYMENT;
+  const isRegistered =
+    participation?.status === ParticipationStatus.REGISTERED ||
+    participation?.status === ParticipationStatus.APPROVED;
   const canViewLeaderboard =
-    event.isLeaderboardPublished === true || isOrganizer;
+    event.isLeaderboardPublished === true || isCreator;
   const canShowLeaderboardSection =
     event.isCompetition === true && event.capabilities.scoring === true;
   const toolsTitle =
@@ -149,6 +309,12 @@ export const EventDetails = () => {
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex gap-3">
           <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
           <p className="text-red-800">{error}</p>
+        </div>
+      )}
+
+      {bookingNotice && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <p className="text-blue-800 text-sm">{bookingNotice}</p>
         </div>
       )}
 
@@ -198,9 +364,25 @@ export const EventDetails = () => {
           </div>
         </div>
 
+        {event.isPaid && (
+          <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 mb-6">
+            <p className="text-xs text-gray-500 uppercase tracking-wide">Ticketing</p>
+            <p className="font-semibold text-gray-900 mt-1">
+              ₹{Number(event.price || 0).toLocaleString('en-IN')} per ticket
+            </p>
+            {typeof event.totalSeats === 'number' ? (
+              <p className="text-sm text-gray-600 mt-1">
+                {event.availableSeats ?? 0} / {event.totalSeats} seats available
+              </p>
+            ) : (
+              <p className="text-sm text-gray-600 mt-1">Unlimited seats</p>
+            )}
+          </div>
+        )}
+
         <div className="mb-4">
           {!isCreator &&
-            !isRegistered &&
+            !hasParticipation &&
             user &&
             event.status === "REGISTRATION_OPEN" &&
             event.capabilities.registration && (
@@ -215,6 +397,27 @@ export const EventDetails = () => {
             <div className="flex items-center gap-2 text-green-700 bg-green-50 px-4 py-2 rounded-lg">
               <span className="font-semibold">✓ Registered</span>
               <Badge status={participation?.status || ""} />
+            </div>
+          )}
+          {isPaymentPending && (
+            <div className="flex flex-wrap items-center gap-2 text-amber-800 bg-amber-50 border border-amber-200 px-4 py-3 rounded-lg">
+              <span className="font-semibold">Payment pending</span>
+              <span className="text-xs">
+                {lockCountdown || (participation?.lockedUntil ? `Locked until ${formatDate(participation.lockedUntil)}` : 'Lock active')}
+              </span>
+              <Button variant="secondary" onClick={handleRetryPayment} isLoading={isRetryingPayment || isLaunchingCheckout}>
+                Retry Payment
+              </Button>
+              <Button variant="secondary" onClick={() => handleRefreshPaymentStatus()} isLoading={isRefreshingPayment}>
+                Refresh Status
+              </Button>
+            </div>
+          )}
+
+          {participation?.status === ParticipationStatus.WAITLISTED && (
+            <div className="inline-flex items-center gap-2 text-indigo-700 bg-indigo-50 px-4 py-2 rounded-lg">
+              <span className="font-semibold">You are waitlisted</span>
+              <Badge status={participation.status} />
             </div>
           )}
         </div>
@@ -263,7 +466,7 @@ export const EventDetails = () => {
         event.capabilities.teams === true &&
         event.isCompetition === true && (
           <div className="mt-8 mb-8">
-            <TeamDashboard eventId={event._id} currentUser={user} />
+            <TeamDashboard eventId={event._id} currentUser={user} event={event} onDataChanged={() => loadEvent(event._id)} />
           </div>
         )}
 
@@ -310,9 +513,10 @@ export const EventDetails = () => {
                 eventId={event._id}
                 title={toolsTitle}
                 subtitle={toolsSubtitle}
+                onDataChanged={() => loadEvent(event._id)}
               />
               {event.capabilities.scoring === true && (
-                <ScoringDashboard eventId={event._id} />
+                <ScoringDashboard eventId={event._id} onDataChanged={() => loadEvent(event._id)} />
               )}
             </div>
           )}

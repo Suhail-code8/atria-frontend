@@ -15,6 +15,7 @@ import {
   Radio,
   ShieldCheck,
   Star,
+  Ticket,
   Users
 } from 'lucide-react'
 import { getErrorMessage } from '../utils/formatters'
@@ -39,6 +40,9 @@ export const CreateEvent = () => {
     registrationStartDate: '',
     registrationEndDate: '',
     isPublic: true,
+    isPaid: false,
+    price: 0,
+    totalSeats: '' as number | '',
     capabilities: {
       registration: false,
       submissions: false,
@@ -148,6 +152,7 @@ export const CreateEvent = () => {
     try {
       const payload = {
         ...formData,
+        totalSeats: formData.totalSeats === '' ? undefined : formData.totalSeats,
         isCompetition:
           formData.isCompetition ||
           formData.capabilities.teams ||
@@ -330,6 +335,54 @@ export const CreateEvent = () => {
               </label>
             </div>
 
+            <div className="mb-4 rounded-xl border border-gray-200 p-4 bg-gray-50">
+              <label className="flex items-center gap-3 mb-3">
+                <input
+                  type="checkbox"
+                  checked={formData.isPaid}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      isPaid: e.target.checked,
+                      price: e.target.checked ? prev.price : 0
+                    }))
+                  }
+                  className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                />
+                <div className="flex items-center gap-2">
+                  <Ticket className="w-4 h-4 text-gray-600" />
+                  <p className="font-semibold text-gray-900">Paid Event (Ticketing)</p>
+                </div>
+              </label>
+              {formData.isPaid && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Registration Fee (₹) <span className="text-red-500">*</span></label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={formData.price}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, price: Number(e.target.value) }))}
+                      placeholder="e.g. 499"
+                      required
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Total Seats (optional)</label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={formData.totalSeats}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, totalSeats: e.target.value === '' ? '' : Number(e.target.value) }))}
+                      placeholder="Leave blank for unlimited"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {featureCards.map((feature) => {
                 const selected = formData.capabilities[feature.key]
@@ -388,6 +441,17 @@ export const CreateEvent = () => {
                   <Globe className="w-4 h-4" />
                   {formData.isPublic ? 'Public' : 'Private'}
                 </p>
+              </div>
+              <div className="rounded-lg border border-gray-200 p-4">
+                <p className="text-sm text-gray-500 mb-1">Ticketing</p>
+                {formData.isPaid ? (
+                  <p className="font-semibold text-gray-900 flex items-center gap-2">
+                    <Ticket className="w-4 h-4" />
+                    ₹{formData.price}{formData.totalSeats ? ` · ${formData.totalSeats} seats` : ' · Unlimited seats'}
+                  </p>
+                ) : (
+                  <p className="font-semibold text-gray-900">Free</p>
+                )}
               </div>
               <div className="rounded-lg border border-gray-200 p-4">
                 <p className="text-sm text-gray-500 mb-1">Timeline</p>

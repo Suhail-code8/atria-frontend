@@ -5,6 +5,7 @@ import { eventsApi } from '../../api/events.api'
 import { Event } from '../../types'
 import { getErrorMessage } from '../../utils/formatters'
 import { FormBuilder, FormField } from '../FormBuilder'
+import { Check, Copy, Globe, Lock, RefreshCw, Ticket } from 'lucide-react'
 
 interface EditEventFormProps {
   event: Event
@@ -35,10 +36,39 @@ export const EditEventForm = ({ event, setEvent }: EditEventFormProps) => {
     isCompetition: event.isCompetition === true,
     startDate: String((event as any).date || event.startDate || ''),
     location: '',
-    isLeaderboardPublished: event.isLeaderboardPublished === true
+    isLeaderboardPublished: event.isLeaderboardPublished === true,
+    isPaid: event.isPaid ?? false,
+    price: event.price ?? 0,
+    totalSeats: (event.totalSeats ?? '') as number | ''
   })
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState('')
+  const [accessCode, setAccessCode] = useState<string | null>(event.accessCode ?? null)
+  const [isRegenerating, setIsRegenerating] = useState(false)
+  const [copied, setCopied] = useState(false)
+
+  const inviteUrl = accessCode
+    ? `${window.location.origin}/events/${event._id}?code=${accessCode}`
+    : null
+
+  const handleCopy = () => {
+    if (!inviteUrl) return
+    navigator.clipboard.writeText(inviteUrl)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const handleRegenerate = async () => {
+    setIsRegenerating(true)
+    try {
+      const res = await eventsApi.regenerateAccessCode(event._id)
+      setAccessCode(res.data.data.accessCode)
+    } catch (err) {
+      setError(getErrorMessage(err))
+    } finally {
+      setIsRegenerating(false)
+    }
+  }
 
   useEffect(() => {
     if (event) {
@@ -53,7 +83,10 @@ export const EditEventForm = ({ event, setEvent }: EditEventFormProps) => {
         isCompetition: event.isCompetition === true,
         startDate: String((event as any).date || event.startDate || ''),
         location: (event as any).location || (event as any).venue || '',
-        isLeaderboardPublished: event.isLeaderboardPublished === true
+        isLeaderboardPublished: event.isLeaderboardPublished === true,
+        isPaid: event.isPaid ?? false,
+        price: event.price ?? 0,
+        totalSeats: (event.totalSeats ?? '') as number | ''
       })
     }
   }, [event])
@@ -85,12 +118,17 @@ export const EditEventForm = ({ event, setEvent }: EditEventFormProps) => {
     try {
       const payload = {
         ...editData,
+        totalSeats: editData.totalSeats === '' ? undefined : editData.totalSeats,
         location: editData.location,
         isCompetition: editData.isCompetition || editData.capabilities.teams || editData.capabilities.scoring
       }
       const res = await eventsApi.updateEvent(event._id, payload as any)
       if (setEvent) {
         setEvent(res.data.data)
+        // sync accessCode if backend returns an updated one
+        if (res.data.data.accessCode !== undefined) {
+          setAccessCode(res.data.data.accessCode ?? null)
+        }
       }
       alert('Event configuration saved successfully!')
     } catch (err) {
@@ -171,6 +209,118 @@ export const EditEventForm = ({ event, setEvent }: EditEventFormProps) => {
             />
           </div>
         )}
+
+        <div className="rounded-xl border border-gray-200 p-4 bg-gray-50">
+          <p className="text-sm font-medium text-gray-700 mb-3">Visibility</p>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setEditData((prev) => ({ ...prev, isPublic: true }))}
+              className={`flex items-center gap-2 px-4 py-3 rounded-lg border text-sm font-medium transition-all ${
+                editData.isPublic
+                  ? 'border-primary-500 bg-primary-50 text-primary-700'
+                  : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+              }`}
+            >
+              <Globe className="w-4 h-4" />
+              Public
+            </button>
+            <button
+              type="button"
+              onClick={() => setEditData((prev) => ({ ...prev, isPublic: false }))}
+              className={`flex items-center gap-2 px-4 py-3 rounded-lg border text-sm font-medium transition-all ${
+                !editData.isPublic
+                  ? 'border-primary-500 bg-primary-50 text-primary-700'
+                  : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+              }`}
+            >
+              <Lock className="w-4 h-4" />
+              Private
+            </button>
+          </div>
+          {!editData.isPublic && inviteUrl && (
+            <div className="mt-3 space-y-2">
+              <p className="text-xs text-gray-500">Share this link with participants — anyone with it can view the event:</p>
+              <div className="flex items-center gap-2">
+                <input
+                  readOnly
+                  value={inviteUrl}
+                  className="flex-1 text-xs px-3 py-2 border border-gray-300 rounded-lg bg-white font-mono truncate focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={handleCopy}
+                  className="flex-shrink-0 flex items-center gap-1 px-3 py-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 text-xs"
+                >
+                  {copied ? <Check className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copied ? 'Copied' : 'Copy'}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRegenerate}
+                  disabled={isRegenerating}
+                  title="Regenerate invite link (invalidates the old one)"
+                  className="flex-shrink-0 flex items-center gap-1 px-3 py-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 text-xs disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isRegenerating ? 'animate-spin' : ''}`} />
+                  Reset
+                </button>
+              </div>
+              <p className="text-xs text-amber-600">Resetting generates a new link and instantly invalidates the old one.</p>
+            </div>
+          )}
+          {!editData.isPublic && !inviteUrl && (
+            <p className="text-xs text-gray-500 mt-2">Save these settings to generate an invite link.</p>
+          )}
+        </div>
+
+        <div className="rounded-xl border border-gray-200 p-4 bg-gray-50 space-y-3">
+          <label className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              checked={editData.isPaid}
+              onChange={(e) =>
+                setEditData((prev) => ({
+                  ...prev,
+                  isPaid: e.target.checked,
+                  price: e.target.checked ? prev.price : 0
+                }))
+              }
+              className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+            />
+            <div className="flex items-center gap-2">
+              <Ticket className="w-4 h-4 text-gray-600" />
+              <p className="font-semibold text-gray-900">Paid Event (Ticketing)</p>
+            </div>
+          </label>
+          {editData.isPaid && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Registration Fee (₹) <span className="text-red-500">*</span></label>
+                <input
+                  type="number"
+                  min="1"
+                  value={editData.price}
+                  onChange={(e) => setEditData((prev) => ({ ...prev, price: Number(e.target.value) }))}
+                  placeholder="e.g. 499"
+                  required
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Total Seats (optional)</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={editData.totalSeats}
+                  onChange={(e) => setEditData((prev) => ({ ...prev, totalSeats: e.target.value === '' ? '' : Number(e.target.value) }))}
+                  placeholder="Leave blank for unlimited"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+            </div>
+          )}
+        </div>
 
         <label className="flex items-start gap-3 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
           <input

@@ -28,8 +28,11 @@ export const eventsApi = {
   getMyEvents: () =>
     axiosInstance.get<{ success: boolean; data: Event[] }>('/events?organizerId=ME'),
 
-  getEvent: (eventId: string) =>
-    axiosInstance.get<{ success: boolean; data: Event }>(`/events/${eventId}`),
+  getEvent: (eventId: string, code?: string) =>
+    axiosInstance.get<{ success: boolean; data: Event }>(
+      `/events/${eventId}`,
+      code ? { params: { code } } : undefined
+    ),
 
   createEvent: (data: Partial<Event>) =>
     axiosInstance.post<{ success: boolean; data: Event }>('/events', data),
@@ -54,5 +57,15 @@ export const eventsApi = {
   generateEventPoster: (eventId: string) =>
     axiosInstance.post<{ success: boolean; message?: string; data: GeneratePosterResponse }>(
       `/events/${eventId}/poster/generate`
+    ),
+
+  getAccessCode: (eventId: string) =>
+    axiosInstance.get<{ success: boolean; data: { accessCode: string | null } }>(
+      `/events/${eventId}/access-code`
+    ),
+
+  regenerateAccessCode: (eventId: string) =>
+    axiosInstance.post<{ success: boolean; data: { accessCode: string } }>(
+      `/events/${eventId}/regenerate-access-code`
     )
 }

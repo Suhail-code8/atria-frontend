@@ -1,9 +1,10 @@
 import { Dispatch, SetStateAction, useCallback, useEffect, useState } from 'react'
-import { Link, NavLink, Outlet, useParams } from 'react-router-dom'
+import { Link, NavLink, Outlet, useParams, useSearchParams } from 'react-router-dom'
 import { eventsApi } from '../api/events.api'
 import { participationApi } from '../api/participation.api'
+import { teamApi } from '../api/team.api'
 import { useAuth } from '../auth/AuthContext'
-import { Event, EventStatus, Participation, UserRole } from '../types'
+import { Event, EventStatus, Participation, ParticipationStatus, UserRole } from '../types'
 import Badge from '../components/Badge'
 import Button from '../components/Button'
 import Modal from '../components/Modal'
@@ -28,16 +29,23 @@ export interface EventLayoutOutletContext {
 
 export const EventLayout = () => {
   const { id } = useParams<{ id: string }>()
+  const [searchParams] = useSearchParams()
   const { user } = useAuth()
   const [event, setEvent] = useState<Event | null>(null)
   const [participation, setParticipation] = useState<Participation | null>(null)
   const [participants, setParticipants] = useState<Participation[]>([])
   const [isParticipantsLoading, setIsParticipantsLoading] = useState(false)
+  const [canAccessTeamHub, setCanAccessTeamHub] = useState(false)
   const [participantsSearch, setParticipantsSearch] = useState('')
   const [expandedParticipantId, setExpandedParticipantId] = useState<string | null>(null)
   const [showParticipants, setShowParticipants] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
+  const [bookingNotice, setBookingNotice] = useState('')
+  const [lockCountdown, setLockCountdown] = useState('')
+  const [isRetryingPayment, setIsRetryingPayment] = useState(false)
+  const [isRefreshingPayment, setIsRefreshingPayment] = useState(false)
+  const [isLaunchingCheckout, setIsLaunchingCheckout] = useState(false)
   const [showRegistrationModal, setShowRegistrationModal] = useState(false)
 
   const loadEvent = useCallback(async () => {
@@ -51,7 +59,7 @@ export const EventLayout = () => {
     setError('')
 
     try {
-      const eventRes = await eventsApi.getEvent(id)
+      const eventRes = await eventsApi.getEvent(id, searchParams.get('code') ?? undefined)
       setEvent(eventRes.data.data)
 
       if (user?.role === UserRole.PARTICIPANT) {
@@ -69,26 +77,226 @@ export const EventLayout = () => {
     } finally {
       setIsLoading(false)
     }
-  }, [id, user])
+  }, [id, user, searchParams])
 
   useEffect(() => {
     loadEvent()
   }, [loadEvent])
+
+  useEffect(() => {
+    let cancelled = false
+
+    const resolveTeamHubAccess = async () => {
+      if (!user || user.role !== UserRole.PARTICIPANT) {
+        if (!cancelled) setCanAccessTeamHub(false)
+        return
+      }
+
+      if (!event?._id || event.capabilities.teams !== true || event.isCompetition !== true) {
+        if (!cancelled) setCanAccessTeamHub(false)
+        return
+      }
+
+      try {
+        const response = await teamApi.getEventTeams(event._id)
+        const teams = response.data.data
+
+        const isTeamManager = teams.some((team) =>
+          team.members.some((member) => {
+            const memberUser = member.user
+            const memberUserId =
+              typeof memberUser === 'string'
+                ? memberUser
+                : memberUser?._id || memberUser?.id
+
+            return (
+              memberUserId === user._id &&
+              (member.role === 'MANAGER' || member.role === 'ASST_MANAGER')
+            )
+          })
+        )
+
+        if (!cancelled) {
+          setCanAccessTeamHub(isTeamManager)
+        }
+      } catch {
+        if (!cancelled) {
+          setCanAccessTeamHub(false)
+        }
+      }
+    }
+
+    resolveTeamHubAccess()
+
+    return () => {
+      cancelled = true
+    }
+  }, [event?._id, event?.capabilities.teams, event?.isCompetition, user])
+
+  const launchPaymentCheckout = async (pendingParticipation: Participation) => {
+    if (!event || !pendingParticipation.razorpayOrderId) return
+
+    setIsLaunchingCheckout(true)
+
+    try {
+      const scriptLoaded = await new Promise<boolean>((resolve) => {
+        if ((window as any).Razorpay) return resolve(true)
+        const script = document.createElement('script')
+        script.src = 'https://checkout.razorpay.com/v1/checkout.js'
+        script.onload = () => resolve(true)
+        script.onerror = () => resolve(false)
+        document.body.appendChild(script)
+      })
+
+      if (!scriptLoaded) {
+        setError('Payment gateway failed to load')
+        return
+      }
+
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID as string,
+        amount: Math.round(Number(event.price ?? 0) * 100),
+        currency: 'INR',
+        order_id: pendingParticipation.razorpayOrderId,
+        handler: async (paymentResponse: {
+          razorpay_order_id: string
+          razorpay_payment_id: string
+          razorpay_signature: string
+        }) => {
+          try {
+            const verifyRes = await participationApi.verifyPayment({
+              razorpay_order_id: paymentResponse.razorpay_order_id,
+              razorpay_payment_id: paymentResponse.razorpay_payment_id,
+              razorpay_signature: paymentResponse.razorpay_signature,
+            })
+            setParticipation((verifyRes.data as any).data ?? pendingParticipation)
+            setShowRegistrationModal(false)
+            setError('')
+            setBookingNotice('Payment verified. Your ticket is confirmed.')
+          } catch (err: unknown) {
+            setError(getErrorMessage(err))
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            setParticipation(pendingParticipation)
+            setShowRegistrationModal(false)
+            setError('Payment was not completed. You can retry from this page.')
+            setBookingNotice('Seat is temporarily locked. Complete payment before lock expires.')
+          },
+        },
+      }
+
+      const rzp = new (window as any).Razorpay(options)
+      rzp.open()
+    } finally {
+      setIsLaunchingCheckout(false)
+    }
+  }
 
   const handleRegister = async (answers: Record<string, any>) => {
     if (!event) return
 
     try {
       const response = await participationApi.registerForEvent(event._id, answers)
-      setParticipation(response.data.data)
-      setShowRegistrationModal(false)
-      setError('')
+      const result = response.data.data
+
+      if (
+        result.status === ParticipationStatus.PENDING_PAYMENT &&
+        result.razorpayOrderId
+      ) {
+        setParticipation(result)
+        setBookingNotice('Seat locked for 10 minutes. Complete payment to confirm your ticket.')
+        await launchPaymentCheckout(result)
+      } else {
+        setParticipation(result)
+        setShowRegistrationModal(false)
+        setError('')
+        if (result.status === ParticipationStatus.WAITLISTED) {
+          setBookingNotice('Event is full. You have been added to the waitlist.')
+        } else {
+          setBookingNotice('Registration completed successfully.')
+        }
+      }
     } catch (err: unknown) {
       const message = getErrorMessage(err)
       setError(message)
       throw err
     }
   }
+
+  const handleRetryPayment = async () => {
+    if (!event) return
+    setIsRetryingPayment(true)
+    try {
+      const res = await participationApi.retryPayment(event._id)
+      const pendingParticipation = res.data.data
+      setParticipation(pendingParticipation)
+
+      if (
+        pendingParticipation.status === ParticipationStatus.PENDING_PAYMENT &&
+        pendingParticipation.razorpayOrderId
+      ) {
+        setBookingNotice('New payment session created. Complete payment before lock expires.')
+        await launchPaymentCheckout(pendingParticipation)
+      } else if (pendingParticipation.status === ParticipationStatus.WAITLISTED) {
+        setBookingNotice('Event is currently full. You are in the waitlist.')
+      }
+    } catch (err: unknown) {
+      setError(getErrorMessage(err))
+    } finally {
+      setIsRetryingPayment(false)
+    }
+  }
+
+  const handleRefreshPaymentStatus = async (silent = false) => {
+    if (!event) return
+    if (!silent) setIsRefreshingPayment(true)
+    try {
+      const res = await participationApi.getPaymentStatus(event._id)
+      setParticipation(res.data.data)
+      if (!silent) setError('')
+    } catch (err: unknown) {
+      if (!silent) setError(getErrorMessage(err))
+    } finally {
+      if (!silent) setIsRefreshingPayment(false)
+    }
+  }
+
+  useEffect(() => {
+    if (!event?._id || participation?.status !== ParticipationStatus.PENDING_PAYMENT) {
+      setLockCountdown('')
+      return
+    }
+
+    const updateCountdown = () => {
+      if (!participation.lockedUntil) {
+        setLockCountdown('No lock window available')
+        return
+      }
+
+      const remainingMs = new Date(participation.lockedUntil).getTime() - Date.now()
+      if (remainingMs <= 0) {
+        setLockCountdown('Lock expired')
+        return
+      }
+
+      const minutes = Math.floor(remainingMs / 60000)
+      const seconds = Math.floor((remainingMs % 60000) / 1000)
+      setLockCountdown(`${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')} remaining`)
+    }
+
+    updateCountdown()
+    const countdownInterval = setInterval(updateCountdown, 1000)
+    const pollInterval = setInterval(() => {
+      handleRefreshPaymentStatus(true)
+    }, 25000)
+
+    return () => {
+      clearInterval(countdownInterval)
+      clearInterval(pollInterval)
+    }
+  }, [event?._id, participation?.status, participation?.lockedUntil])
 
   const loadParticipants = useCallback(async () => {
     if (!event?._id) return
@@ -128,10 +336,19 @@ export const EventLayout = () => {
       ? event.createdBy
       : (event.createdBy as any)?._id
   const isCreator = user?._id === eventCreatorId
-  const isRegistered = Boolean(participation)
+  const canManageEvent = isOrganizer && isCreator
+  const isCompetitionEvent =
+    event.isCompetition === true ||
+    event.capabilities.teams === true ||
+    event.capabilities.scoring === true
+  const hasParticipation = Boolean(participation)
+  const isPaymentPending = participation?.status === ParticipationStatus.PENDING_PAYMENT
+  const isRegistered =
+    participation?.status === ParticipationStatus.REGISTERED ||
+    participation?.status === ParticipationStatus.APPROVED
   const canRegister =
     !isCreator &&
-    !isRegistered &&
+    !hasParticipation &&
     Boolean(user) &&
     event.status === EventStatus.REGISTRATION_OPEN &&
     event.capabilities.registration === true
@@ -184,6 +401,12 @@ export const EventLayout = () => {
         </div>
       )}
 
+      {bookingNotice && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <p className="text-blue-800 text-sm">{bookingNotice}</p>
+        </div>
+      )}
+
       <header className="bg-white rounded-xl shadow p-6 md:p-8">
         {!event.posterUrl && (
           <div className="flex flex-wrap items-start justify-between gap-4 w-full">
@@ -214,6 +437,22 @@ export const EventLayout = () => {
           </div>
         </div>
 
+        {event.isPaid && (
+          <div className="mt-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
+            <p className="text-xs text-gray-500 uppercase tracking-wide">Ticketing</p>
+            <p className="font-semibold text-gray-900 mt-1">
+              ₹{Number(event.price || 0).toLocaleString('en-IN')} per ticket
+            </p>
+            {typeof event.totalSeats === 'number' ? (
+              <p className="text-sm text-gray-600 mt-1">
+                {event.availableSeats ?? 0} / {event.totalSeats} seats available
+              </p>
+            ) : (
+              <p className="text-sm text-gray-600 mt-1">Unlimited seats</p>
+            )}
+          </div>
+        )}
+
         <div className="mt-5 flex flex-wrap items-center gap-3">
           {canRegister && (
             <Button variant="primary" onClick={() => setShowRegistrationModal(true)}>
@@ -228,9 +467,33 @@ export const EventLayout = () => {
             </div>
           )}
 
+          {isPaymentPending && (
+            <div className="flex flex-wrap items-center gap-2 text-amber-800 bg-amber-50 border border-amber-200 px-4 py-3 rounded-lg">
+              <span className="font-semibold">Payment pending</span>
+              <span className="text-xs">
+                {lockCountdown || (participation?.lockedUntil ? `Locked until ${formatDate(participation.lockedUntil)}` : 'Lock active')}
+              </span>
+              <Button variant="secondary" onClick={handleRetryPayment} isLoading={isRetryingPayment || isLaunchingCheckout}>Retry Payment</Button>
+              <Button variant="secondary" onClick={() => handleRefreshPaymentStatus()} isLoading={isRefreshingPayment}>Refresh Status</Button>
+            </div>
+          )}
+
+          {participation?.status === ParticipationStatus.WAITLISTED && (
+            <div className="inline-flex items-center gap-2 text-indigo-700 bg-indigo-50 px-4 py-2 rounded-lg">
+              <span className="font-semibold">You are waitlisted</span>
+              <Badge status={participation.status} />
+            </div>
+          )}
+
           {isRegistered && event.capabilities.submissions === true && (
             <Link to={`/events/${event._id}/submission`}>
               <Button variant="secondary">My Submission</Button>
+            </Link>
+          )}
+
+          {canAccessTeamHub && (
+            <Link to={`/events/${event._id}/team`}>
+              <Button variant="secondary">Team Hub</Button>
             </Link>
           )}
 
@@ -249,7 +512,7 @@ export const EventLayout = () => {
         </div>
       </header>
 
-      {isOrganizer ? (
+      {canManageEvent ? (
         <div className="space-y-6">
           <EventAnnouncements eventId={event._id} />
 
@@ -307,31 +570,48 @@ export const EventLayout = () => {
               Announcements
             </NavLink>
 
-            <NavLink
-              to="manage/teams"
-              className={({ isActive }) =>
-                `whitespace-nowrap py-3 px-1 border-b-2 text-sm font-medium transition-colors ${
-                  isActive
-                    ? 'border-primary-600 text-primary-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`
-              }
-            >
-              Teams
-            </NavLink>
+            {isCompetitionEvent && (
+              <>
+                <NavLink
+                  to="manage/teams"
+                  className={({ isActive }) =>
+                    `whitespace-nowrap py-3 px-1 border-b-2 text-sm font-medium transition-colors ${
+                      isActive
+                        ? 'border-primary-600 text-primary-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`
+                  }
+                >
+                  Teams
+                </NavLink>
 
-            <NavLink
-              to="manage/scoring"
-              className={({ isActive }) =>
-                `whitespace-nowrap py-3 px-1 border-b-2 text-sm font-medium transition-colors ${
-                  isActive
-                    ? 'border-primary-600 text-primary-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`
-              }
-            >
-              Scoring
-            </NavLink>
+                <NavLink
+                  to="manage/scoring"
+                  className={({ isActive }) =>
+                    `whitespace-nowrap py-3 px-1 border-b-2 text-sm font-medium transition-colors ${
+                      isActive
+                        ? 'border-primary-600 text-primary-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`
+                  }
+                >
+                  Scoring
+                </NavLink>
+
+                <NavLink
+                  to="manage/leaderboard"
+                  className={({ isActive }) =>
+                    `whitespace-nowrap py-3 px-1 border-b-2 text-sm font-medium transition-colors ${
+                      isActive
+                        ? 'border-primary-600 text-primary-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`
+                  }
+                >
+                  Leaderboard
+                </NavLink>
+              </>
+            )}
           </nav>
           <Outlet context={{ event, setEvent, participation, currentUser: user, refreshEvent: loadEvent }} />
         </div>

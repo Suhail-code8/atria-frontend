@@ -1,5 +1,4 @@
 import { FormEvent, useEffect, useState } from 'react'
-import { useOutletContext } from 'react-router-dom'
 import { AlertCircle, PlusCircle } from 'lucide-react'
 import Button from '../Button'
 import { ICompetitionEntry, competitionApi, ICompetitionItem } from '../../api/competition.api'
@@ -10,6 +9,7 @@ import { getErrorMessage } from '../../utils/formatters'
 
 interface ScoringDashboardProps {
   eventId: string
+  onDataChanged?: () => Promise<void> | void
 }
 
 interface EntryTeam {
@@ -96,8 +96,7 @@ const buildGradeOptions = (item?: ICompetitionItem | null) => {
   ]
 }
 
-const ScoringDashboard = ({ eventId }: ScoringDashboardProps) => {
-  const { refreshEvent } = useOutletContext<any>()
+const ScoringDashboard = ({ eventId, onDataChanged }: ScoringDashboardProps) => {
   const { user } = useAuth()
   const [items, setItems] = useState<ICompetitionItem[]>([])
   const [entries, setEntries] = useState<CompetitionEntry[]>([])
@@ -285,7 +284,7 @@ const ScoringDashboard = ({ eventId }: ScoringDashboardProps) => {
       })
 
       await loadEntriesForItem(itemId)
-      await refreshEvent()
+      await onDataChanged?.()
       setSuccessMessage('Result submitted successfully.')
     } catch (err: unknown) {
       setError(getErrorMessage(err))

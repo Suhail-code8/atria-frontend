@@ -1,5 +1,4 @@
 import { FormEvent, useEffect, useState } from 'react'
-import { useOutletContext } from 'react-router-dom'
 import { AlertCircle, Plus, Trash2 } from 'lucide-react'
 import Button from '../Button'
 import Input from '../Input'
@@ -14,6 +13,7 @@ interface FestSetupProps {
   eventId: string
   title?: string
   subtitle?: string
+  onDataChanged?: () => Promise<void> | void
 }
 
 type ActiveTab = 'CATEGORIES' | 'ITEMS'
@@ -21,9 +21,9 @@ type ActiveTab = 'CATEGORIES' | 'ITEMS'
 const FestSetup = ({
   eventId,
   title = 'Fest Setup',
-  subtitle = 'Create categories and configure competition items.'
+  subtitle = 'Create categories and configure competition items.',
+  onDataChanged
 }: FestSetupProps) => {
-  const { refreshEvent } = useOutletContext<any>()
   const [categories, setCategories] = useState<ICategory[]>([])
   const [items, setItems] = useState<ICompetitionItem[]>([])
   const [activeTab, setActiveTab] = useState<ActiveTab>('CATEGORIES')
@@ -102,7 +102,7 @@ const FestSetup = ({
       setCategories((prev) => [...prev, createdCategory])
 
       resetCategoryForm()
-      await refreshEvent()
+      await onDataChanged?.()
     } catch (err: unknown) {
       setError(getErrorMessage(err))
     } finally {
@@ -118,7 +118,7 @@ const FestSetup = ({
       await competitionApi.deleteCategory(categoryId)
       setCategories((prev) => prev.filter((category) => category._id !== categoryId))
       setSelectedCategoryIds((prev) => prev.filter((id) => id !== categoryId))
-      await refreshEvent()
+      await onDataChanged?.()
     } catch (err: unknown) {
       setError(getErrorMessage(err))
     } finally {
@@ -164,7 +164,7 @@ const FestSetup = ({
       setItems((prev) => [...prev, createdItem])
 
       resetItemForm()
-      await refreshEvent()
+      await onDataChanged?.()
     } catch (err: unknown) {
       setError(getErrorMessage(err))
     } finally {
@@ -179,7 +179,7 @@ const FestSetup = ({
     try {
       await competitionApi.deleteItem(itemId)
       setItems((prev) => prev.filter((item) => item._id !== itemId))
-      await refreshEvent()
+      await onDataChanged?.()
     } catch (err: unknown) {
       setError(getErrorMessage(err))
     } finally {

@@ -5,9 +5,10 @@ import { getErrorMessage } from '../../utils/formatters'
 
 interface IndividualLeaderboardProps {
   eventId: string
+  showEmail?: boolean
 }
 
-const IndividualLeaderboard = ({ eventId }: IndividualLeaderboardProps) => {
+const IndividualLeaderboard = ({ eventId, showEmail = false }: IndividualLeaderboardProps) => {
   const [rows, setRows] = useState<IndividualLeaderboardEntry[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
@@ -58,6 +59,7 @@ const IndividualLeaderboard = ({ eventId }: IndividualLeaderboardProps) => {
               <tr className="text-left text-gray-600 border-b border-gray-200">
                 <th className="py-2 pr-4 font-semibold">Rank</th>
                 <th className="py-2 pr-4 font-semibold">Participant</th>
+                {showEmail && <th className="py-2 pr-4 font-semibold">Email</th>}
                 <th className="py-2 pr-4 font-semibold">Team</th>
                 <th className="py-2 text-right font-semibold">Points</th>
               </tr>
@@ -77,8 +79,10 @@ const IndividualLeaderboard = ({ eventId }: IndividualLeaderboardProps) => {
                     <td className="py-3 pr-4 font-bold text-gray-900">#{rank}</td>
                     <td className="py-3 pr-4">
                       <p className="font-medium text-gray-900">{entry.name}</p>
-                      <p className="text-xs text-gray-500">{entry.email}</p>
                     </td>
+                    {showEmail && (
+                      <td className="py-3 pr-4 text-xs text-gray-500">{entry.email || '—'}</td>
+                    )}
                     <td className="py-3 pr-4 text-gray-800">{entry.team}</td>
                     <td className="py-3 text-right font-semibold text-gray-900">{entry.individualPoints}</td>
                   </tr>

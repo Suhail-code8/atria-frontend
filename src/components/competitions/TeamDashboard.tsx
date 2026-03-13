@@ -1,5 +1,4 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react'
-import { useOutletContext } from 'react-router-dom'
 import { AlertCircle, Plus, Users } from 'lucide-react'
 import Button from '../Button'
 import Input from '../Input'
@@ -12,18 +11,18 @@ import {
   ICompetitionItem,
   competitionApi
 } from '../../api/competition.api'
-import { eventsApi } from '../../api/events.api'
 import { ITeam, TeamRole, teamApi } from '../../api/team.api'
-import { UserRole } from '../../types'
+import { Event, UserRole } from '../../types'
 import { getErrorMessage } from '../../utils/formatters'
 
 interface TeamDashboardProps {
   eventId: string
   currentUser: any
+  event?: Event | null
+  onDataChanged?: () => Promise<void> | void
 }
 
-const TeamDashboard = ({ eventId, currentUser }: TeamDashboardProps) => {
-  const { refreshEvent } = useOutletContext<any>()
+const TeamDashboard = ({ eventId, currentUser, event, onDataChanged }: TeamDashboardProps) => {
   const [teams, setTeams] = useState<ITeam[]>([])
   const [myTeam, setMyTeam] = useState<ITeam | null>(null)
   const [categories, setCategories] = useState<ICategory[]>([])
@@ -57,12 +56,11 @@ const TeamDashboard = ({ eventId, currentUser }: TeamDashboardProps) => {
     setError('')
 
     try {
-      const [teamsRes, categoriesRes, itemsRes, entriesRes, eventRes] = await Promise.all([
+      const [teamsRes, categoriesRes, itemsRes, entriesRes] = await Promise.all([
         teamApi.getEventTeams(eventId),
         competitionApi.getCategories(eventId),
         competitionApi.getItems(eventId),
-        competitionApi.getEntriesByEvent(eventId),
-        eventsApi.getEvent(eventId)
+        competitionApi.getEntriesByEvent(eventId)
       ])
 
       const fetchedTeams = teamsRes.data.data
@@ -75,7 +73,7 @@ const TeamDashboard = ({ eventId, currentUser }: TeamDashboardProps) => {
       setItems(fetchedItems)
       setEventEntries(fetchedEntries)
       setMaxIndividualItemsPerParticipant(
-        eventRes.data.data.limits?.maxIndividualItemsPerParticipant ?? null
+        event?.limits?.maxIndividualItemsPerParticipant ?? null
       )
 
       if (fetchedItems.length > 0 && !selectedItemId) {
@@ -108,7 +106,7 @@ const TeamDashboard = ({ eventId, currentUser }: TeamDashboardProps) => {
 
   useEffect(() => {
     loadData()
-  }, [eventId, currentUserId])
+  }, [eventId, currentUserId, event?.limits?.maxIndividualItemsPerParticipant])
 
   const selectedItem = useMemo(
     () => items.find((item) => item._id === selectedItemId) || null,
@@ -348,7 +346,7 @@ const TeamDashboard = ({ eventId, currentUser }: TeamDashboardProps) => {
       setTeamName('')
       setManagerEmail('')
       await loadData()
-      await refreshEvent()
+      await onDataChanged?.()
     } catch (err: unknown) {
       setError(getErrorMessage(err))
     } finally {
@@ -391,7 +389,7 @@ const TeamDashboard = ({ eventId, currentUser }: TeamDashboardProps) => {
       setMemberCategoryId('')
 
       await loadData()
-      await refreshEvent()
+      await onDataChanged?.()
     } catch (err: unknown) {
       setError(getErrorMessage(err))
     } finally {
@@ -493,7 +491,7 @@ const TeamDashboard = ({ eventId, currentUser }: TeamDashboardProps) => {
       setIsEnrollModalOpen(false)
       await refreshItemEntries(selectedItemId)
       await loadData()
-      await refreshEvent()
+      await onDataChanged?.()
     } catch (err: unknown) {
       setError(getErrorMessage(err))
     } finally {

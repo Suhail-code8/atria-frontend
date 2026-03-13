@@ -16,6 +16,10 @@ const getStatusBadgeColor = (status: string): string => {
     case SubmissionStatus.ACCEPTED:
     case ParticipationStatus.APPROVED:
       return 'bg-green-100 text-green-800'
+    case ParticipationStatus.PENDING_PAYMENT:
+      return 'bg-amber-100 text-amber-800'
+    case ParticipationStatus.WAITLISTED:
+      return 'bg-indigo-100 text-indigo-800'
     case EventStatus.CANCELLED:
     case SubmissionStatus.REJECTED:
     case ParticipationStatus.REJECTED:

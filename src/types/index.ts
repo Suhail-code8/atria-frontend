@@ -88,6 +88,11 @@ export interface Event {
   eventType: EventType
   isCompetition?: boolean
   isLeaderboardPublished?: boolean
+  isPaid?: boolean
+  price?: number
+  totalSeats?: number
+  availableSeats?: number
+  accessCode?: string
   startDate: string | Date
   endDate: string | Date
   registrationStartDate?: string | Date
@@ -110,6 +115,8 @@ export enum ParticipationRole {
 }
 
 export enum ParticipationStatus {
+  PENDING_PAYMENT = 'PENDING_PAYMENT',
+  WAITLISTED = 'WAITLISTED',
   REGISTERED = 'REGISTERED',
   APPROVED = 'APPROVED',
   REJECTED = 'REJECTED',
@@ -124,6 +131,9 @@ export interface Participation {
   status: ParticipationStatus
   answers?: Record<string, any>
   metadata?: Record<string, any>
+  lockedUntil?: string | null
+  razorpayOrderId?: string
+  razorpayPaymentId?: string
   registeredAt: string
   createdAt?: string
   updatedAt?: string
